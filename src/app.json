@@ -2,6 +2,7 @@
   "expo": {
     "name": "runner",
     "slug": "runner",
+    "scheme": "runner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.runner"
     },
     "web": {
       "favicon": "./assets/favicon.png"
