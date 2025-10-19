@@ -1,5 +1,5 @@
 import Log from "@/screens/log";
 
-export default function LogPage() {
+export default function LogTab() {
   return <Log></Log>;
 }
