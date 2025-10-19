@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.runner"
+      "package": "com.evanc.runner"
     },
     "web": {
       "favicon": "./assets/favicon.png"
