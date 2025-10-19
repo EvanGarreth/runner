@@ -1,20 +1,5 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import Log from "@/screens/log";
 
-export default function Log() {
-  return (
-    <View style={styles.container}>
-      <Text>Run Log</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+export default function LogPage() {
+  return <Log></Log>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
