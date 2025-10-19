@@ -140,3 +140,5 @@ vite.config.ts.timestamp-*
 
 android/
 ios/
+
+expo-env.d.ts
