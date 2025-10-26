@@ -1,28 +1,42 @@
 import { StyleSheet } from "react-native";
 import { Text, View } from "@/components/Themed";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { Link } from "expo-router";
 
-export default function Log() {
+export default function NewRun() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>New Run</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <Text style={styles.item}>
+        <FontAwesome5 name="stopwatch-20" /> Timed
+      </Text>
+
+      <Text style={styles.item}>
+        <Link href="/runs">
+          <FontAwesome5 name="ruler" /> Distance
+        </Link>
+      </Text>
+      <Text style={styles.item}>
+        <FontAwesome5 name="road" /> Free Run
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexDirection: "column",
+    width: "100%",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-evenly",
+    flex: 1,
+    padding: 15,
   },
-  title: {
+  item: {
     fontSize: 20,
-    fontWeight: "bold",
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: "80%",
+    backgroundColor: "#ccc",
+    width: "50%",
+    height: "30%",
+    textAlign: "center",
+    textAlignVertical: "center",
   },
 });
