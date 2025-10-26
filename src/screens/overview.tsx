@@ -19,13 +19,13 @@ export default function Overview() {
     { miles: 1.4, duration: 4444 },
   ]);
 
-  useEffect(() => {
-    async function setup() {
-      const result = await db.getAllSync<Run>("SELECT (miles, duration) from RUNS");
-      setRuns(result);
-    }
-    setup();
-  }, []);
+  // useEffect(() => {
+  //   async function setup() {
+  //     const result = await db.getAllSync<Run>("SELECT (miles, duration) from RUNS");
+  //     setRuns(result);
+  //   }
+  //   setup();
+  // }, []);
 
   const miles = runs.reduce((t, r) => t + r.miles, 0);
   const hms = getHMS(runs.reduce((t, r) => t + r.duration, 0));
