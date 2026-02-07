@@ -1,6 +1,67 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 // import { fs } from 'react-native-fs';
 
+export async function seedTestData(db: SQLiteDatabase) {
+  // Check if test data already exists
+  const existingData = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM locationData WHERE id = 1'
+  );
+
+  if (existingData && existingData.count > 0) {
+    console.log('Test data already exists, skipping seed');
+    return;
+  }
+
+  // Insert fake location data (loop path in Golden Gate Park area, SF)
+  const locationData = [
+    { latitude: 37.7694, longitude: -122.4862 },
+    { latitude: 37.7696, longitude: -122.4865 },
+    { latitude: 37.7699, longitude: -122.4868 },
+    { latitude: 37.7702, longitude: -122.4871 },
+    { latitude: 37.7705, longitude: -122.4873 },
+    { latitude: 37.7709, longitude: -122.4875 },
+    { latitude: 37.7713, longitude: -122.4876 },
+    { latitude: 37.7717, longitude: -122.4876 },
+    { latitude: 37.7721, longitude: -122.4875 },
+    { latitude: 37.7724, longitude: -122.4873 },
+    { latitude: 37.7727, longitude: -122.487 },
+    { latitude: 37.7729, longitude: -122.4866 },
+    { latitude: 37.773, longitude: -122.4862 },
+    { latitude: 37.773, longitude: -122.4858 },
+    { latitude: 37.7729, longitude: -122.4854 },
+    { latitude: 37.7727, longitude: -122.485 },
+    { latitude: 37.7724, longitude: -122.4847 },
+    { latitude: 37.7721, longitude: -122.4845 },
+    { latitude: 37.7717, longitude: -122.4844 },
+    { latitude: 37.7713, longitude: -122.4844 },
+    { latitude: 37.7709, longitude: -122.4845 },
+    { latitude: 37.7705, longitude: -122.4847 },
+    { latitude: 37.7702, longitude: -122.485 },
+    { latitude: 37.7699, longitude: -122.4853 },
+    { latitude: 37.7696, longitude: -122.4856 },
+    { latitude: 37.7694, longitude: -122.4859 },
+    { latitude: 37.7694, longitude: -122.4862 },
+  ];
+
+  await db.runAsync('INSERT INTO locationData (id, json) VALUES (?, ?)', [1, JSON.stringify(locationData)]);
+
+  // Insert test run
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(8, 0, 0, 0);
+
+  const endTime = new Date(yesterday);
+  endTime.setMinutes(endTime.getMinutes() + 28);
+
+  await db.runAsync(
+    `INSERT INTO runs (type, start, end, miles, steps, rating, note, locationDataId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ['F', yesterday.toISOString(), endTime.toISOString(), 2.8, 4200, 4, 'Beautiful morning run through the park! Weather was perfect.', 1]
+  );
+
+  console.log('Test data seeded successfully');
+}
+
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   const DATABASE_VERSION = 1;
   let result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -63,4 +124,9 @@ CREATE TABLE locationData (
     currentDbVersion = 1;
   }
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+}
+
+export async function initDatabase(db: SQLiteDatabase) {
+  await migrateDbIfNeeded(db);
+  await seedTestData(db);
 }

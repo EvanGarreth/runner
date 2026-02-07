@@ -145,3 +145,4 @@ ios/
 
 expo-env.d.ts
 .direnv
+.claude

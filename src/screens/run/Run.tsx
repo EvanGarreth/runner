@@ -5,6 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { formatDistance, formatTime, calculatePace } from "@/utils/location";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ExpoMap, Polyline, Marker } from "expo-maps";
 
 interface RunData {
   id: number;
@@ -18,11 +19,17 @@ interface RunData {
   locationDataId: number;
 }
 
+interface Coordinate {
+  latitude: number;
+  longitude: number;
+}
+
 export default function Run() {
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
   const [run, setRun] = useState<RunData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
 
   useEffect(() => {
     const loadRun = async () => {
@@ -41,6 +48,27 @@ export default function Run() {
 
     loadRun();
   }, [params.id, db]);
+
+  useEffect(() => {
+    const loadLocationData = async () => {
+      if (run?.locationDataId) {
+        try {
+          const locationData = await db.getFirstAsync<{ json: string }>(
+            "SELECT json FROM locationData WHERE id = ?",
+            [run.locationDataId]
+          );
+          if (locationData?.json) {
+            const coords = JSON.parse(locationData.json);
+            setCoordinates(coords);
+          }
+        } catch (error) {
+          console.error("Error loading location data:", error);
+        }
+      }
+    };
+
+    loadLocationData();
+  }, [run, db]);
 
   const getRunTypeName = (type: string) => {
     switch (type) {
@@ -76,6 +104,30 @@ export default function Run() {
   const duration = (end.getTime() - start.getTime()) / 1000;
   const pace = calculatePace(run.miles, duration);
 
+  const getMapRegion = () => {
+    if (coordinates.length === 0) return null;
+
+    const latitudes = coordinates.map((coord) => coord.latitude);
+    const longitudes = coordinates.map((coord) => coord.longitude);
+
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLng = Math.min(...longitudes);
+    const maxLng = Math.max(...longitudes);
+
+    const latDelta = (maxLat - minLat) * 1.5; // Add 50% padding
+    const lngDelta = (maxLng - minLng) * 1.5;
+
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: Math.max(latDelta, 0.01), // Minimum zoom level
+      longitudeDelta: Math.max(lngDelta, 0.01),
+    };
+  };
+
+  const mapRegion = getMapRegion();
+
   return (
     <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
@@ -95,6 +147,23 @@ export default function Run() {
         </View>
 
         <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+
+        {coordinates.length > 0 && mapRegion && (
+          <>
+            <View style={styles.mapContainer}>
+              <ExpoMap style={styles.map} initialCameraPosition={{ target: mapRegion, zoom: 15 }}>
+                <Polyline positions={coordinates} strokeColor="#4CAF50" strokeWidth={4} />
+                {coordinates.length > 0 && (
+                  <>
+                    <Marker position={coordinates[0]} title="Start" color="#00C853" />
+                    <Marker position={coordinates[coordinates.length - 1]} title="Finish" color="#FF1744" />
+                  </>
+                )}
+              </ExpoMap>
+            </View>
+            <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+          </>
+        )}
 
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
@@ -174,6 +243,16 @@ const styles = StyleSheet.create({
     marginVertical: 24,
     height: 1,
     width: "100%",
+  },
+  mapContainer: {
+    width: "100%",
+    height: 300,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  map: {
+    width: "100%",
+    height: "100%",
   },
   statsGrid: {
     flexDirection: "row",
