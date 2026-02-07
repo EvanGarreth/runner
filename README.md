@@ -1,3 +1,3 @@
 # runner
 
-run tracking app. Exuse to try out React Native
+run tracking app. Excuse to try out React Native & Claude Code
