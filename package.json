@@ -10,6 +10,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "baseline-browser-mapping": "^2.9.19",
     "expo": "~54.0.13",
     "expo-constants": "~18.0.9",
     "expo-linking": "~8.0.8",

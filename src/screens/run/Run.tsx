@@ -17,11 +17,23 @@ interface RunData {
   rating: number;
   note: string;
   locationDataId: number;
+  weatherId: number | null;
 }
 
 interface Coordinate {
   latitude: number;
   longitude: number;
+}
+
+interface WeatherData {
+  id: number;
+  date: string;
+  temperature: number;
+  precipitation: string | null;
+  windSpeed: number | null;
+  windDirection: string | null;
+  humidity: number | null;
+  uvIndex: number | null;
 }
 
 export default function Run() {
@@ -30,12 +42,13 @@ export default function Run() {
   const [run, setRun] = useState<RunData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
     const loadRun = async () => {
       try {
         const result = await db.getFirstAsync<RunData>(
-          "SELECT id, type, start, end, miles, steps, rating, note, locationDataId FROM runs WHERE id = ?",
+          "SELECT id, type, start, end, miles, steps, rating, note, locationDataId, weatherId FROM runs WHERE id = ?",
           [params.id]
         );
         setRun(result || null);
@@ -53,10 +66,9 @@ export default function Run() {
     const loadLocationData = async () => {
       if (run?.locationDataId) {
         try {
-          const locationData = await db.getFirstAsync<{ json: string }>(
-            "SELECT json FROM locationData WHERE id = ?",
-            [run.locationDataId]
-          );
+          const locationData = await db.getFirstAsync<{ json: string }>("SELECT json FROM locationData WHERE id = ?", [
+            run.locationDataId,
+          ]);
           if (locationData?.json) {
             const coords = JSON.parse(locationData.json);
             setCoordinates(coords);
@@ -70,6 +82,24 @@ export default function Run() {
     loadLocationData();
   }, [run, db]);
 
+  useEffect(() => {
+    const loadWeather = async () => {
+      if (run?.weatherId) {
+        try {
+          const weatherData = await db.getFirstAsync<WeatherData>(
+            "SELECT id, date, temperature, precipitation, windSpeed, windDirection, humidity, uvIndex FROM weather WHERE id = ?",
+            [run.weatherId]
+          );
+          setWeather(weatherData || null);
+        } catch (error) {
+          console.error("Error loading weather data:", error);
+        }
+      }
+    };
+
+    loadWeather();
+  }, [run, db]);
+
   const getRunTypeName = (type: string) => {
     switch (type) {
       case "T":
@@ -81,6 +111,17 @@ export default function Run() {
       default:
         return "Run";
     }
+  };
+
+  const getTemperatureUnit = (temp: number) => {
+    // Heuristic: if temp is > 50, it's likely Fahrenheit, otherwise Celsius
+    // This is a simple approach since we're storing the data in the unit it was fetched in
+    return temp > 50 ? "°F" : "°C";
+  };
+
+  const getWindSpeedUnit = (temp: number) => {
+    // Use same heuristic as temperature
+    return temp > 50 ? "mph" : "km/h";
   };
 
   if (isLoading) {
@@ -205,6 +246,51 @@ export default function Run() {
           </View>
         </View>
 
+        {weather && (
+          <>
+            <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+            <View style={styles.weatherSection}>
+              <Text style={styles.weatherTitle}>Weather Conditions</Text>
+              <View style={styles.weatherGrid}>
+                <View style={styles.weatherCard}>
+                  <FontAwesome name="thermometer-half" size={24} color="#FF5722" style={styles.weatherIcon} />
+                  <Text style={styles.weatherValue}>
+                    {weather.temperature.toFixed(1)}
+                    {getTemperatureUnit(weather.temperature)}
+                  </Text>
+                  <Text style={styles.weatherLabel}>Temperature</Text>
+                </View>
+
+                {weather.humidity !== null && (
+                  <View style={styles.weatherCard}>
+                    <FontAwesome name="tint" size={24} color="#2196F3" style={styles.weatherIcon} />
+                    <Text style={styles.weatherValue}>{weather.humidity.toFixed(0)}%</Text>
+                    <Text style={styles.weatherLabel}>Humidity</Text>
+                  </View>
+                )}
+
+                {weather.windSpeed !== null && weather.windDirection && (
+                  <View style={styles.weatherCard}>
+                    <FontAwesome name="flag" size={24} color="#009688" style={styles.weatherIcon} />
+                    <Text style={styles.weatherValue}>
+                      {weather.windSpeed.toFixed(1)} {getWindSpeedUnit(weather.temperature)}
+                    </Text>
+                    <Text style={styles.weatherLabel}>Wind ({weather.windDirection})</Text>
+                  </View>
+                )}
+
+                {weather.uvIndex !== null && weather.uvIndex > 0 && (
+                  <View style={styles.weatherCard}>
+                    <FontAwesome name="sun-o" size={24} color="#FFC107" style={styles.weatherIcon} />
+                    <Text style={styles.weatherValue}>{weather.uvIndex}</Text>
+                    <Text style={styles.weatherLabel}>UV Index</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </>
+        )}
+
         {run.note && run.note.length > 0 && (
           <>
             <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
@@ -292,6 +378,42 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statLabel: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+  },
+  weatherSection: {
+    width: "100%",
+  },
+  weatherTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  weatherGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  weatherCard: {
+    width: "48%",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  weatherIcon: {
+    marginBottom: 8,
+  },
+  weatherValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  weatherLabel: {
     fontSize: 12,
     color: "#666",
     textAlign: "center",

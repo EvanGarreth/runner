@@ -56,14 +56,23 @@ export async function seedTestData(db: SQLiteDatabase) {
   await db.runAsync(
     `INSERT INTO runs (type, start, end, miles, steps, rating, note, locationDataId)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ['F', yesterday.toISOString(), endTime.toISOString(), 2.8, 4200, 4, 'Beautiful morning run through the park! Weather was perfect.', 1]
+    [
+      'F',
+      yesterday.toISOString(),
+      endTime.toISOString(),
+      2.8,
+      4200,
+      4,
+      'Beautiful morning run through the park! Weather was perfect.',
+      1,
+    ]
   );
 
   console.log('Test data seeded successfully');
 }
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 1;
+  const DATABASE_VERSION = 2;
   let result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   let currentDbVersion = result?.user_version;
 
@@ -115,7 +124,7 @@ CREATE TABLE weather (
   uvIndex INTEGER
 );
 
--- just gonna dump the json here for now. Don't see a point in having a row per sampled location 
+-- just gonna dump the json here for now. Don't see a point in having a row per sampled location
 CREATE TABLE locationData (
   id INTEGER PRIMARY KEY NOT NULL,
   json TEXT NOT NULL
@@ -123,6 +132,21 @@ CREATE TABLE locationData (
 `);
     currentDbVersion = 1;
   }
+
+  if (currentDbVersion === 1) {
+    await db.execAsync(`
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY NOT NULL,
+  value TEXT NOT NULL
+);
+
+INSERT OR IGNORE INTO settings (key, value) VALUES
+  ('weatherTrackingEnabled', 'true'),
+  ('useMetricUnits', 'false');
+`);
+    currentDbVersion = 2;
+  }
+
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
 

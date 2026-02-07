@@ -11,7 +11,8 @@ import {
   calculatePace,
   LocationPoint,
 } from "@/utils/location";
-import { getGpsInterval } from "@/utils/settings";
+import { getGpsInterval, getWeatherTrackingEnabled, getUseMetricUnits } from "@/utils/settings";
+import { fetchAndSaveWeather } from "@/utils/weather";
 import { useSQLiteContext } from "expo-sqlite";
 
 type RunType = "T" | "D" | "F";
@@ -32,6 +33,7 @@ export default function ActiveRun() {
   const [currentDistance, setCurrentDistance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const [gpsIntervalSeconds, setGpsIntervalSeconds] = useState(5);
 
   const startTime = useRef<number | null>(null);
   const pausedTime = useRef<number>(0);
@@ -67,9 +69,21 @@ export default function ActiveRun() {
         [runType, startDate, endDate, locationResult.lastInsertRowId, currentDistance, 0, 0, ""]
       );
 
+      const runId = runResult.lastInsertRowId;
+
+      // Fetch and save weather data if enabled (fire-and-forget)
+      const weatherEnabled = await getWeatherTrackingEnabled(db);
+      const useMetric = await getUseMetricUnits(db);
+      if (weatherEnabled && locationPoints.length > 0) {
+        const lastPoint = locationPoints[locationPoints.length - 1];
+        fetchAndSaveWeather(db, runId, lastPoint.latitude, lastPoint.longitude, new Date(endDate), useMetric).catch(
+          console.error
+        );
+      }
+
       // Navigate to completion screen with run details
       router.replace(
-        `/runs/complete?runId=${runResult.lastInsertRowId}&distance=${currentDistance}&time=${elapsedSeconds}&type=${runType}`
+        `/runs/complete?runId=${runId}&distance=${currentDistance}&time=${elapsedSeconds}&type=${runType}`
       );
     } catch (error) {
       console.error("Error saving run:", error);
@@ -94,6 +108,10 @@ export default function ActiveRun() {
   // Request permissions and start run
   useEffect(() => {
     const initRun = async () => {
+      // Load GPS interval from settings
+      const interval = await getGpsInterval(db);
+      setGpsIntervalSeconds(interval);
+
       const granted = await requestLocationPermissions();
       setPermissionGranted(granted);
 
@@ -155,7 +173,7 @@ export default function ActiveRun() {
     }, 100);
 
     // Start GPS tracking
-    const gpsIntervalMs = getGpsInterval() * 1000;
+    const gpsIntervalMs = gpsIntervalSeconds * 1000;
     gpsInterval.current = setInterval(async () => {
       const location = await getCurrentLocation();
       if (location) {
@@ -174,7 +192,7 @@ export default function ActiveRun() {
       setIsPaused(false);
 
       // Resume GPS tracking
-      const gpsIntervalMs = getGpsInterval() * 1000;
+      const gpsIntervalMs = gpsIntervalSeconds * 1000;
       gpsInterval.current = setInterval(async () => {
         const location = await getCurrentLocation();
         if (location) {
@@ -282,7 +300,7 @@ export default function ActiveRun() {
 
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}>GPS Points: {locationPoints.length}</Text>
-        <Text style={styles.infoText}>GPS Interval: {getGpsInterval()}s</Text>
+        <Text style={styles.infoText}>GPS Interval: {gpsIntervalSeconds}s</Text>
       </View>
     </View>
   );
