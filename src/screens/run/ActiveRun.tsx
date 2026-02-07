@@ -61,18 +61,21 @@ export default function ActiveRun() {
       const locationResult = await db.runAsync("INSERT INTO locationData (json) VALUES (?)", [locationDataJson]);
 
       // Insert run
-      await db.runAsync(
+      const runResult = await db.runAsync(
         `INSERT INTO runs (type, start, end, locationDataId, miles, steps, rating, note)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [runType, startDate, endDate, locationResult.lastInsertRowId, currentDistance, 0, 0, ""]
       );
 
-      router.replace("/");
+      // Navigate to completion screen with run details
+      router.replace(
+        `/runs/complete?runId=${runResult.lastInsertRowId}&distance=${currentDistance}&time=${elapsedSeconds}&type=${runType}`
+      );
     } catch (error) {
       console.error("Error saving run:", error);
       Alert.alert("Error", "Failed to save run. Please try again.");
     }
-  }, [locationPoints, db, runType, currentDistance, router]);
+  }, [locationPoints, db, runType, currentDistance, elapsedSeconds, router]);
 
   const handleStopRun = useCallback(() => {
     Alert.alert("End Run", "Are you sure you want to end this run?", [

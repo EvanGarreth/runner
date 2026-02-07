@@ -8,6 +8,13 @@ export default function RunsLayout() {
   return (
     <Stack>
       <Stack.Screen name="active" options={{ title: "Active Run" }} />
+      <Stack.Screen
+        name="complete"
+        options={{
+          title: "Complete Run",
+          headerLeft: () => null,
+        }}
+      />
       <Stack.Screen name="config-timed" options={{ title: "Configure Timed Run" }} />
       <Stack.Screen name="config-distance" options={{ title: "Configure Distance Run" }} />
       <Stack.Screen name="settings" options={{ title: "Run Settings" }} />
