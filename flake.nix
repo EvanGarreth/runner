@@ -107,7 +107,7 @@
             ln -sf "$HOME/.expo-arm-tools/adb" "$ANDROID_HOME/platform-tools/adb"
 
             # Symlink other SDK components from original location
-            for dir in tools emulator build-tools platforms system-images ndk ndk-bundle; do
+            for dir in tools emulator build-tools platforms system-images ndk ndk-bundle licenses; do
               if [ -d "$ORIGINAL_ANDROID_HOME/$dir" ]; then
                 ln -sf "$ORIGINAL_ANDROID_HOME/$dir" "$ANDROID_HOME/$dir" 2>/dev/null || true
               fi
