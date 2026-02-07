@@ -14,7 +14,7 @@
           system = system;
           config = {
             allowUnfree = true;
-            android_sdk.accept_license = true;
+            android_sdk.accept_license = true; 
           };
           # Ensure native compilation, especially important for ARM systems
           overlays = [];
@@ -35,6 +35,7 @@
           platformToolsVersion = "35.0.1";
           extraLicenses = [
             "android-googletv-license"
+            "android-sdk-license"
             "android-sdk-arm-dbt-license"
             "android-sdk-preview-license"
             "google-gdk-license"
@@ -114,6 +115,8 @@
 
             # Update NDK path to use original location
             export ANDROID_NDK_ROOT="$ORIGINAL_NDK_ROOT"
+
+            export NIXPKGS_ACCEPT_ANDROID_SDK_LICENSE=1
 
             # Put our ARM-compatible tools first in PATH
             export PATH="$HOME/.expo-arm-tools:${pkgs.android-tools}/bin:$PATH"
