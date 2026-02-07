@@ -53,6 +53,7 @@ function RootLayoutNav() {
       <SQLiteProvider databaseName="runner.db" onInit={migrateDbIfNeeded}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="runs" options={{ headerShown: false }} />
         </Stack>
       </SQLiteProvider>
     </ThemeProvider>

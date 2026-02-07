@@ -1,24 +1,20 @@
 import React from "react";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Stack, Tabs } from "expo-router";
-
-import Colors from "@/constants/Colors";
+import { Stack } from "expo-router";
 import { useColorScheme } from "@/components/useColorScheme";
 
-function TabBarIcon(props: { name: React.ComponentProps<typeof FontAwesome>["name"]; color: string }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
-
-export default function TabLayout() {
+export default function RunsLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: "Active Run" }} />
+      <Stack.Screen name="active" options={{ title: "Active Run" }} />
+      <Stack.Screen name="config-timed" options={{ title: "Configure Timed Run" }} />
+      <Stack.Screen name="config-distance" options={{ title: "Configure Distance Run" }} />
+      <Stack.Screen name="settings" options={{ title: "Run Settings" }} />
       <Stack.Screen
         name="[id]"
         options={{
-          title: "Run",
+          title: "Run Details",
         }}
       />
     </Stack>

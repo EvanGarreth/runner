@@ -25,11 +25,11 @@ CREATE TABLE runs (
   type CHAR(1) CHECK( type in ( "T", "D", "F")),
   start DATETIME NOT NULL,
   end DATETIME NOT NULL,
-  duration DATETIME AS (timediff(unixepoch(start), unixepoch(end))) STORED
+  duration DATETIME AS (timediff(unixepoch(start), unixepoch(end))) STORED,
 
   locationDataId INTEGER,
   -- calculated from the data at the end of the run
-  miles PRECISON NOT NULL,
+  miles PRECISION NOT NULL,
   steps INTEGER NOT NULL,
 
   weatherId INTEGER,

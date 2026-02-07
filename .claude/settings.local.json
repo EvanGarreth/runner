@@ -9,7 +9,9 @@
       "Bash(ln:*)",
       "Bash(/home/evan/.expo-arm-tools/adb:*)",
       "Bash($ANDROID_HOME/platform-tools/adb --version)",
-      "Bash(printenv:*)"
+      "Bash(printenv:*)",
+      "Bash(bun run lint)",
+      "Bash(bun run lint:*)"
     ]
   }
 }
