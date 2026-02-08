@@ -172,6 +172,14 @@ export async function requestBackgroundPermissions(): Promise<boolean> {
       return false;
     }
 
+    // First check if we already have background permission
+    const { status: existingStatus } = await Location.getBackgroundPermissionsAsync();
+
+    if (existingStatus === 'granted') {
+      return true;
+    }
+
+    // Only request if we don't already have permission
     const { status } = await Location.requestBackgroundPermissionsAsync();
     return status === 'granted';
   } catch (error) {

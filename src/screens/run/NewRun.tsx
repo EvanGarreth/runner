@@ -2,9 +2,41 @@ import { StyleSheet, TouchableOpacity } from "react-native";
 import { Text, View } from "@/components/Themed";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { requestLocationPermissions, requestBackgroundPermissions, getCurrentLocation } from "@/utils/location";
 
 export default function NewRun() {
   const router = useRouter();
+
+  // Warm up GPS on mount
+  useEffect(() => {
+    const warmUpGPS = async () => {
+      console.log("Warming up GPS...");
+
+      // Request permissions first
+      const foregroundGranted = await requestLocationPermissions();
+      if (!foregroundGranted) {
+        console.log("Foreground permissions not granted, skipping GPS warmup");
+        return;
+      }
+
+      const backgroundGranted = await requestBackgroundPermissions();
+      if (!backgroundGranted) {
+        console.log("Background permissions not granted, skipping GPS warmup");
+        return;
+      }
+
+      // Get initial location to warm up GPS
+      const location = await getCurrentLocation();
+      if (location) {
+        console.log("GPS warmed up successfully:", location);
+      } else {
+        console.log("Failed to get initial GPS location");
+      }
+    };
+
+    warmUpGPS();
+  }, []);
 
   return (
     <View style={styles.container}>
