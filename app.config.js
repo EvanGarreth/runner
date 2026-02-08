@@ -19,6 +19,9 @@ module.exports = {
       supportsTablet: true,
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "This app uses your location to track your runs.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "This app needs background location access to continue tracking your runs even when the screen is locked or the app is minimized.",
+        UIBackgroundModes: ["location"],
       },
     },
     android: {
@@ -29,7 +32,7 @@ module.exports = {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: "com.evanc.runner",
-      permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from "react-native";
+import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { formatDistance, formatTime } from "@/utils/location";
@@ -53,60 +53,69 @@ export default function CompleteRun() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Run Complete!</Text>
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={styles.container}>
+          <Text style={styles.title}>Run Complete!</Text>
 
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryLabel}>Run Type</Text>
-          <Text style={styles.summaryValue}>{getRunTypeName()}</Text>
+          <View style={styles.summaryContainer}>
+            <Text style={styles.summaryLabel}>Run Type</Text>
+            <Text style={styles.summaryValue}>{getRunTypeName()}</Text>
 
-          <Text style={styles.summaryLabel}>Distance</Text>
-          <Text style={styles.summaryValue}>{formatDistance(distance)}</Text>
+            <Text style={styles.summaryLabel}>Distance</Text>
+            <Text style={styles.summaryValue}>{formatDistance(distance)}</Text>
 
-          <Text style={styles.summaryLabel}>Time</Text>
-          <Text style={styles.summaryValue}>{formatTime(time)}</Text>
-        </View>
-
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingLabel}>How was your run?</Text>
-          <View style={styles.starsContainer}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} onPress={() => setRating(star)} style={styles.starButton}>
-                <FontAwesome name={star <= rating ? "star" : "star-o"} size={40} color="#FFD700" />
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.summaryLabel}>Time</Text>
+            <Text style={styles.summaryValue}>{formatTime(time)}</Text>
           </View>
-        </View>
 
-        <View style={styles.notesContainer}>
-          <Text style={styles.notesLabel}>Notes (optional)</Text>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="How did you feel? Any highlights or challenges?"
-            placeholderTextColor="#999"
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            value={note}
-            onChangeText={setNote}
-            maxLength={500}
-          />
-        </View>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.ratingLabel}>How was your run?</Text>
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)} style={styles.starButton}>
+                  <FontAwesome name={star <= rating ? "star" : "star-o"} size={40} color="#FFD700" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, rating === 0 && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={rating === 0 || isSaving}
-        >
-          <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save Run"}</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <View style={styles.notesContainer}>
+            <Text style={styles.notesLabel}>Notes (optional)</Text>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="How did you feel? Any highlights or challenges?"
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              value={note}
+              onChangeText={setNote}
+              maxLength={500}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, rating === 0 && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={rating === 0 || isSaving}
+          >
+            <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save Run"}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollContainer: {
     flexGrow: 1,
   },

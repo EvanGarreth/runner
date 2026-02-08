@@ -4,7 +4,10 @@ import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   requestLocationPermissions,
+  requestBackgroundPermissions,
   getCurrentLocation,
+  startBackgroundLocationTracking,
+  stopBackgroundLocationTracking,
   calculateTotalDistance,
   formatDistance,
   formatTime,
@@ -41,7 +44,7 @@ export default function ActiveRun() {
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
   const gpsInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const stopTracking = useCallback(() => {
+  const stopTracking = useCallback(async () => {
     if (timerInterval.current) {
       clearInterval(timerInterval.current);
       timerInterval.current = null;
@@ -50,6 +53,10 @@ export default function ActiveRun() {
       clearInterval(gpsInterval.current);
       gpsInterval.current = null;
     }
+
+    // Stop background location tracking
+    await stopBackgroundLocationTracking();
+
     setIsRunning(false);
   }, []);
 
@@ -112,25 +119,48 @@ export default function ActiveRun() {
       const interval = await getGpsInterval(db);
       setGpsIntervalSeconds(interval);
 
+      console.log("requesting foreground permissions");
       const granted = await requestLocationPermissions();
-      setPermissionGranted(granted);
 
       if (!granted) {
+        console.log("foreground permissions not granted");
         Alert.alert("Location Permission Required", "Please enable location permissions to track your run.", [
           { text: "OK", onPress: () => router.back() },
         ]);
         setIsLoading(false);
         return;
       }
+      console.log("foreground permissions granted");
+
+      // Request background permissions for continuous tracking
+      console.log("requesting background permissions");
+      const backgroundGranted = await requestBackgroundPermissions();
+
+      if (!backgroundGranted) {
+        console.log("background permissions not granted");
+        Alert.alert(
+          "Background Location Required",
+          "Please enable background location to continue tracking even when the screen is locked or the app is minimized.",
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+        setIsLoading(false);
+        return;
+      }
+      console.log("background permissions granted");
+
+      setPermissionGranted(true);
 
       // Get initial location
+      console.log("get current");
       const initialLocation = await getCurrentLocation();
+      console.log("got current");
       if (initialLocation) {
+        console.log("inital!");
         setLocationPoints([initialLocation]);
       }
 
       setIsLoading(false);
-      startRun();
+      await startRun();
     };
 
     initRun();
@@ -159,7 +189,7 @@ export default function ActiveRun() {
     }
   }, [elapsedSeconds, runType, targetSeconds, isRunning, handleStopRun]);
 
-  const startRun = () => {
+  const startRun = async () => {
     startTime.current = Date.now();
     setIsRunning(true);
     setIsPaused(false);
@@ -172,17 +202,19 @@ export default function ActiveRun() {
       }
     }, 100);
 
-    // Start GPS tracking
-    const gpsIntervalMs = gpsIntervalSeconds * 1000;
-    gpsInterval.current = setInterval(async () => {
-      const location = await getCurrentLocation();
-      if (location) {
-        setLocationPoints((prev) => [...prev, location]);
-      }
-    }, gpsIntervalMs);
+    // Start background GPS tracking
+    const trackingStarted = await startBackgroundLocationTracking((locations) => {
+      setLocationPoints((prev) => [...prev, ...locations]);
+    });
+
+    if (!trackingStarted) {
+      console.error("Failed to start background location tracking");
+      Alert.alert("GPS Error", "Failed to start location tracking. Please try again.");
+      stopTracking();
+    }
   };
 
-  const handlePauseResume = () => {
+  const handlePauseResume = async () => {
     if (isPaused) {
       // Resume
       if (lastPauseStart.current) {
@@ -191,20 +223,24 @@ export default function ActiveRun() {
       }
       setIsPaused(false);
 
-      // Resume GPS tracking
-      const gpsIntervalMs = gpsIntervalSeconds * 1000;
-      gpsInterval.current = setInterval(async () => {
-        const location = await getCurrentLocation();
-        if (location) {
-          setLocationPoints((prev) => [...prev, location]);
-        }
-      }, gpsIntervalMs);
+      // Resume background GPS tracking
+      const trackingStarted = await startBackgroundLocationTracking((locations) => {
+        setLocationPoints((prev) => [...prev, ...locations]);
+      });
+
+      if (!trackingStarted) {
+        console.error("Failed to resume background location tracking");
+        Alert.alert("GPS Error", "Failed to resume location tracking.");
+      }
     } else {
       // Pause
       lastPauseStart.current = Date.now();
       setIsPaused(true);
 
-      // Stop GPS tracking
+      // Stop background GPS tracking
+      await stopBackgroundLocationTracking();
+
+      // Clear interval refs if any
       if (gpsInterval.current) {
         clearInterval(gpsInterval.current);
         gpsInterval.current = null;
