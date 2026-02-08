@@ -2,9 +2,11 @@ import { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ConfigTimed() {
   const router = useRouter();
+  const { palette } = useTheme();
   const [hours, setHours] = useState("0");
   const [minutes, setMinutes] = useState("30");
   const [seconds, setSeconds] = useState("0");
@@ -19,6 +21,60 @@ export default function ConfigTimed() {
 
     router.push(`/runs/active?type=T&targetSeconds=${totalSeconds}`);
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginBottom: 40,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 40,
+    },
+    timeInput: {
+      alignItems: "center",
+    },
+    input: {
+      borderWidth: 2,
+      borderColor: "#ccc",
+      borderRadius: 8,
+      width: 70,
+      height: 70,
+      fontSize: 32,
+      textAlign: "center",
+      fontWeight: "bold",
+    },
+    label: {
+      fontSize: 12,
+      marginTop: 5,
+      color: palette.textMuted,
+    },
+    separator: {
+      fontSize: 32,
+      fontWeight: "bold",
+      marginHorizontal: 10,
+    },
+    startButton: {
+      backgroundColor: palette.primary,
+      paddingHorizontal: 40,
+      paddingVertical: 15,
+      borderRadius: 10,
+    },
+    startButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -72,57 +128,3 @@ export default function ConfigTimed() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 40,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 40,
-  },
-  timeInput: {
-    alignItems: "center",
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    width: 70,
-    height: 70,
-    fontSize: 32,
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  label: {
-    fontSize: 12,
-    marginTop: 5,
-    color: "#666",
-  },
-  separator: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginHorizontal: 10,
-  },
-  startButton: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-  startButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-});

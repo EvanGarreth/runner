@@ -1,5 +1,5 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -9,6 +9,7 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { SQLiteProvider } from "expo-sqlite";
 import { initDatabase } from "@/utils/db";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -49,13 +50,15 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <SQLiteProvider databaseName="runner.db" onInit={initDatabase}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="runs" options={{ headerShown: false }} />
-        </Stack>
+        <ThemeProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="runs" options={{ headerShown: false }} />
+          </Stack>
+        </ThemeProvider>
       </SQLiteProvider>
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }

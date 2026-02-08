@@ -11,14 +11,76 @@ import {
   getUseMetricUnits,
   setUseMetricUnits,
 } from "@/utils/settings";
+import { ColorPicker } from "@/components/ColorPicker";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Settings() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { baseColor, updateBaseColor, palette } = useTheme();
   const [interval, setInterval] = useState("5");
   const [weatherTracking, setWeatherTracking] = useState(false);
   const [useMetric, setUseMetric] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(baseColor);
   const [isLoading, setIsLoading] = useState(true);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      marginBottom: 30,
+    },
+    settingContainer: {
+      marginBottom: 30,
+    },
+    label: {
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 5,
+    },
+    description: {
+      fontSize: 14,
+      color: palette.textMuted,
+      marginBottom: 15,
+    },
+    input: {
+      borderWidth: 2,
+      borderColor: "#ccc",
+      borderRadius: 8,
+      padding: 15,
+      fontSize: 18,
+      marginBottom: 10,
+    },
+    hint: {
+      fontSize: 12,
+      color: palette.textMuted,
+      fontStyle: "italic",
+    },
+    toggleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    toggleLabel: {
+      flex: 1,
+      marginRight: 15,
+    },
+    saveButton: {
+      paddingHorizontal: 30,
+      paddingVertical: 15,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    saveButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+  });
 
   // Load settings from database on mount
   useEffect(() => {
@@ -31,6 +93,7 @@ export default function Settings() {
         setInterval(gpsInterval.toString());
         setWeatherTracking(weatherEnabled);
         setUseMetric(metricEnabled);
+        setSelectedColor(baseColor);
       } catch (error) {
         console.error("Failed to load settings:", error);
         Alert.alert("Error", "Failed to load settings");
@@ -40,7 +103,7 @@ export default function Settings() {
     }
 
     loadSettings();
-  }, [db]);
+  }, [db, baseColor]);
 
   const handleSave = async () => {
     const intervalValue = parseInt(interval);
@@ -54,6 +117,7 @@ export default function Settings() {
       await setGpsInterval(db, intervalValue);
       await setWeatherTrackingEnabled(db, weatherTracking);
       await setUseMetricUnits(db, useMetric);
+      await updateBaseColor(selectedColor);
 
       Alert.alert("Settings Saved", "Your settings have been updated", [{ text: "OK", onPress: () => router.back() }]);
     } catch (error) {
@@ -98,7 +162,7 @@ export default function Settings() {
           <Switch
             value={weatherTracking}
             onValueChange={setWeatherTracking}
-            trackColor={{ false: "#ccc", true: "#4CAF50" }}
+            trackColor={{ false: "#ccc", true: palette.primary }}
             thumbColor={weatherTracking ? "#fff" : "#f4f3f4"}
           />
         </View>
@@ -113,74 +177,21 @@ export default function Settings() {
           <Switch
             value={useMetric}
             onValueChange={setUseMetric}
-            trackColor={{ false: "#ccc", true: "#4CAF50" }}
+            trackColor={{ false: "#ccc", true: palette.primary }}
             thumbColor={useMetric ? "#fff" : "#f4f3f4"}
           />
         </View>
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+      <View style={styles.settingContainer}>
+        <Text style={styles.label}>Theme Color</Text>
+        <Text style={styles.description}>Choose your preferred color scheme</Text>
+        <ColorPicker selectedColor={selectedColor} onSelectColor={setSelectedColor} />
+      </View>
+
+      <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.primary }]} onPress={handleSave}>
         <Text style={styles.saveButtonText}>Save Settings</Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 30,
-  },
-  settingContainer: {
-    marginBottom: 30,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  description: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 15,
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  hint: {
-    fontSize: 12,
-    color: "#999",
-    fontStyle: "italic",
-  },
-  toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  toggleLabel: {
-    flex: 1,
-    marginRight: 15,
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-});

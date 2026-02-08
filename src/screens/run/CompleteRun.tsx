@@ -1,10 +1,20 @@
 import { useState, useRef } from "react";
-import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, View as RNView } from "react-native";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  View as RNView,
+} from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { formatDistance, formatTime } from "@/utils/location";
 import { useSQLiteContext } from "expo-sqlite";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type RunType = "T" | "D" | "F";
 
@@ -12,6 +22,7 @@ export default function CompleteRun() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
+  const { palette } = useTheme();
 
   const runId = params.runId ? parseInt(params.runId as string) : 0;
   const distance = params.distance ? parseFloat(params.distance as string) : 0;
@@ -54,13 +65,99 @@ export default function CompleteRun() {
     }
   };
 
+  const styles = StyleSheet.create({
+    keyboardAvoidingView: {
+      flex: 1,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginTop: 20,
+      marginBottom: 30,
+    },
+    summaryContainer: {
+      marginBottom: 30,
+      paddingHorizontal: 20,
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: palette.textMuted,
+      marginTop: 15,
+    },
+    summaryValue: {
+      fontSize: 24,
+      fontWeight: "600",
+      marginTop: 5,
+    },
+    ratingContainer: {
+      alignItems: "center",
+      marginBottom: 30,
+      paddingVertical: 20,
+    },
+    ratingLabel: {
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 15,
+    },
+    starsContainer: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    starButton: {
+      padding: 5,
+    },
+    notesContainer: {
+      marginBottom: 30,
+    },
+    notesLabel: {
+      fontSize: 16,
+      fontWeight: "600",
+      marginBottom: 10,
+    },
+    notesInput: {
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      minHeight: 100,
+    },
+    saveButton: {
+      backgroundColor: palette.primary,
+      paddingVertical: 16,
+      borderRadius: 10,
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    saveButtonDisabled: {
+      backgroundColor: "#ccc",
+    },
+    saveButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+  });
+
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoidingView}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.container}>
           <Text style={styles.title}>Run Complete!</Text>
 
@@ -91,7 +188,7 @@ export default function CompleteRun() {
             <TextInput
               style={styles.notesInput}
               placeholder="How did you feel? Any highlights or challenges?"
-              placeholderTextColor="#999"
+              placeholderTextColor={palette.textMuted}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -130,85 +227,3 @@ export default function CompleteRun() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  summaryContainer: {
-    marginBottom: 30,
-    paddingHorizontal: 20,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 15,
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginTop: 5,
-  },
-  ratingContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-    paddingVertical: 20,
-  },
-  ratingLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 15,
-  },
-  starsContainer: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  starButton: {
-    padding: 5,
-  },
-  notesContainer: {
-    marginBottom: 30,
-  },
-  notesLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  notesInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 16,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  saveButtonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-});

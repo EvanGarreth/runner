@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, View as RNView } from "react-native";
+import { StyleSheet, ScrollView, ActivityIndicator, TouchableHighlight, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +6,7 @@ import { formatDistance, formatTime, calculatePace } from "@/utils/location";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Run {
   id: number;
@@ -19,6 +20,7 @@ interface Run {
 export default function Overview() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const { palette } = useTheme();
   const [runs, setRuns] = useState<Run[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,6 +71,107 @@ export default function Overview() {
         return "Run";
     }
   };
+
+  const styles = StyleSheet.create({
+    scrollView: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      marginBottom: 10,
+    },
+    separator: {
+      marginVertical: 20,
+      height: 1,
+      width: "100%",
+    },
+    emptyText: {
+      fontSize: 18,
+      textAlign: "center",
+      marginTop: 40,
+      color: palette.textMuted,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      textAlign: "center",
+      marginTop: 10,
+      color: palette.textMuted,
+    },
+    statsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      marginBottom: 30,
+    },
+    statCard: {
+      width: "48%",
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: palette.cardBackground,
+      marginBottom: 12,
+      alignItems: "center",
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginBottom: 4,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: palette.textMuted,
+      textAlign: "center",
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      marginBottom: 15,
+    },
+    runCard: {
+      borderRadius: 12,
+      backgroundColor: palette.cardBackground,
+      marginBottom: 12,
+      overflow: "hidden",
+    },
+    runCardContainer: {
+      padding: 16,
+    },
+    runCardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    runType: {
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    ratingContainer: {
+      flexDirection: "row",
+      gap: 2,
+    },
+    runDate: {
+      fontSize: 14,
+      color: palette.textMuted,
+      marginBottom: 8,
+    },
+    runStats: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    runStat: {
+      fontSize: 14,
+      color: palette.textSecondary,
+    },
+    runStatDivider: {
+      marginHorizontal: 8,
+      color: palette.textMuted,
+    },
+  });
 
   if (isLoading) {
     return (
@@ -124,127 +227,37 @@ export default function Overview() {
           const duration = (end.getTime() - start.getTime()) / 1000;
 
           return (
-            <TouchableOpacity key={run.id} style={styles.runCard} onPress={() => router.push(`/runs/${run.id}`)}>
-              <RNView style={styles.runCardHeader}>
-                <Text style={styles.runType}>{getRunTypeName(run.type)} Run</Text>
-                <RNView style={styles.ratingContainer}>
-                  {[...Array(run.rating)].map((_, i) => (
-                    <FontAwesome key={i} name="star" size={14} color="#FFD700" />
-                  ))}
+            <TouchableHighlight
+              key={run.id}
+              style={styles.runCard}
+              onPress={() => router.push(`/runs/${run.id}`)}
+              underlayColor={palette.cardHighlight}
+              activeOpacity={0.8}
+            >
+              <RNView style={styles.runCardContainer}>
+                <RNView style={styles.runCardHeader}>
+                  <Text style={styles.runType}>{getRunTypeName(run.type)} Run</Text>
+                  <RNView style={styles.ratingContainer}>
+                    {[...Array(run.rating)].map((_, i) => (
+                      <FontAwesome key={i} name="star" size={14} color="#FFD700" />
+                    ))}
+                  </RNView>
+                </RNView>
+                <Text style={styles.runDate}>
+                  {start.toLocaleDateString()} at {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+                <RNView style={styles.runStats}>
+                  <Text style={styles.runStat}>{formatDistance(run.miles)}</Text>
+                  <Text style={styles.runStatDivider}>•</Text>
+                  <Text style={styles.runStat}>{formatTime(duration)}</Text>
+                  <Text style={styles.runStatDivider}>•</Text>
+                  <Text style={styles.runStat}>{calculatePace(run.miles, duration)} pace</Text>
                 </RNView>
               </RNView>
-              <Text style={styles.runDate}>
-                {start.toLocaleDateString()} at {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-              <RNView style={styles.runStats}>
-                <Text style={styles.runStat}>{formatDistance(run.miles)}</Text>
-                <Text style={styles.runStatDivider}>•</Text>
-                <Text style={styles.runStat}>{formatTime(duration)}</Text>
-                <Text style={styles.runStatDivider}>•</Text>
-                <Text style={styles.runStat}>{calculatePace(run.miles, duration)} pace</Text>
-              </RNView>
-            </TouchableOpacity>
+            </TouchableHighlight>
           );
         })}
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  separator: {
-    marginVertical: 20,
-    height: 1,
-    width: "100%",
-  },
-  emptyText: {
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 40,
-    color: "#666",
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 10,
-    color: "#999",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 30,
-  },
-  statCard: {
-    width: "48%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  runCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 12,
-  },
-  runCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  runType: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    gap: 2,
-  },
-  runDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-  },
-  runStats: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  runStat: {
-    fontSize: 14,
-    color: "#333",
-  },
-  runStatDivider: {
-    marginHorizontal: 8,
-    color: "#999",
-  },
-});

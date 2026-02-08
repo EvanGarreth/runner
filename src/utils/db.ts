@@ -72,7 +72,7 @@ export async function seedTestData(db: SQLiteDatabase) {
 }
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 2;
+  const DATABASE_VERSION = 3;
   let result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   let currentDbVersion = result?.user_version;
 
@@ -145,6 +145,14 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('useMetricUnits', 'false');
 `);
     currentDbVersion = 2;
+  }
+
+  if (currentDbVersion === 2) {
+    await db.execAsync(`
+INSERT OR IGNORE INTO settings (key, value) VALUES
+  ('themeBaseColor', '#4CAF50');
+`);
+    currentDbVersion = 3;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { formatDistance, formatTime, calculatePace } from "@/utils/location";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { GoogleMaps, AppleMaps } from "expo-maps";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface RunData {
   id: number;
@@ -39,6 +40,7 @@ interface WeatherData {
 export default function Run() {
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
+  const { palette } = useTheme();
   const [run, setRun] = useState<RunData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
@@ -99,6 +101,142 @@ export default function Run() {
 
     loadWeather();
   }, [run, db]);
+
+  const styles = StyleSheet.create({
+    scrollView: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+      alignItems: "center",
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      marginTop: 10,
+      textAlign: "center",
+    },
+    date: {
+      fontSize: 16,
+      color: palette.textMuted,
+      marginTop: 8,
+      textAlign: "center",
+    },
+    time: {
+      fontSize: 14,
+      color: palette.textMuted,
+      marginTop: 4,
+      textAlign: "center",
+    },
+    ratingContainer: {
+      flexDirection: "row",
+      gap: 6,
+      marginTop: 16,
+    },
+    separator: {
+      marginVertical: 24,
+      height: 1,
+      width: "100%",
+    },
+    mapContainer: {
+      width: "100%",
+      height: 300,
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    map: {
+      width: "100%",
+      height: "100%",
+    },
+    statsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      width: "100%",
+    },
+    statCard: {
+      width: "48%",
+      padding: 20,
+      borderRadius: 12,
+      backgroundColor: palette.cardBackground,
+      marginBottom: 12,
+      alignItems: "center",
+    },
+    statIcon: {
+      marginBottom: 12,
+    },
+    statValue: {
+      fontSize: 22,
+      fontWeight: "bold",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    statLabel: {
+      fontSize: 12,
+      color: palette.textMuted,
+      textAlign: "center",
+    },
+    weatherSection: {
+      width: "100%",
+    },
+    weatherTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      marginBottom: 12,
+    },
+    weatherGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      width: "100%",
+    },
+    weatherCard: {
+      width: "48%",
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: palette.cardBackground,
+      marginBottom: 12,
+      alignItems: "center",
+    },
+    weatherIcon: {
+      marginBottom: 8,
+    },
+    weatherValue: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    weatherLabel: {
+      fontSize: 12,
+      color: palette.textMuted,
+      textAlign: "center",
+    },
+    notesSection: {
+      width: "100%",
+    },
+    notesTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      marginBottom: 12,
+    },
+    notesCard: {
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: palette.cardBackground,
+    },
+    notesText: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: palette.textSecondary,
+    },
+    errorText: {
+      fontSize: 18,
+      color: "#f44336",
+      textAlign: "center",
+    },
+  });
 
   const getRunTypeName = (type: string) => {
     switch (type) {
@@ -191,7 +329,7 @@ export default function Run() {
                 <AppleMaps.View
                   style={styles.map}
                   cameraPosition={{ coordinates: mapCenter, zoom: 15 }}
-                  polylines={[{ coordinates: coordinates, color: "#4CAF50", width: 4 }]}
+                  polylines={[{ coordinates: coordinates, color: palette.primary, width: 4 }]}
                   markers={[
                     { coordinates: coordinates[0], title: "Start", tintColor: "#00C853" },
                     {
@@ -205,7 +343,7 @@ export default function Run() {
                 <GoogleMaps.View
                   style={styles.map}
                   cameraPosition={{ coordinates: mapCenter, zoom: 15 }}
-                  polylines={[{ coordinates: coordinates, color: "#4CAF50", width: 4 }]}
+                  polylines={[{ coordinates: coordinates, color: palette.primary, width: 4 }]}
                   markers={[
                     { coordinates: coordinates[0], title: "Start" },
                     {
@@ -306,139 +444,3 @@ export default function Run() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginTop: 10,
-    textAlign: "center",
-  },
-  date: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  time: {
-    fontSize: 14,
-    color: "#999",
-    marginTop: 4,
-    textAlign: "center",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 16,
-  },
-  separator: {
-    marginVertical: 24,
-    height: 1,
-    width: "100%",
-  },
-  mapContainer: {
-    width: "100%",
-    height: 300,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  map: {
-    width: "100%",
-    height: "100%",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  statCard: {
-    width: "48%",
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  statIcon: {
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-  },
-  weatherSection: {
-    width: "100%",
-  },
-  weatherTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  weatherGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  weatherCard: {
-    width: "48%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  weatherIcon: {
-    marginBottom: 8,
-  },
-  weatherValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  weatherLabel: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-  },
-  notesSection: {
-    width: "100%",
-  },
-  notesTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  notesCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-  },
-  notesText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#333",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "#f44336",
-    textAlign: "center",
-  },
-});

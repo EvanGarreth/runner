@@ -2,9 +2,11 @@ import { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ConfigDistance() {
   const router = useRouter();
+  const { palette } = useTheme();
   const [distance, setDistance] = useState("5.0");
   const [unit, setUnit] = useState<"miles" | "km">("miles");
 
@@ -21,6 +23,68 @@ export default function ConfigDistance() {
 
     router.push(`/runs/active?type=D&targetDistance=${distanceInMiles}`);
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginBottom: 40,
+    },
+    inputContainer: {
+      width: "80%",
+      marginBottom: 30,
+    },
+    input: {
+      borderWidth: 2,
+      borderColor: "#ccc",
+      borderRadius: 8,
+      padding: 15,
+      fontSize: 32,
+      textAlign: "center",
+      fontWeight: "bold",
+    },
+    unitContainer: {
+      flexDirection: "row",
+      gap: 15,
+      marginBottom: 40,
+    },
+    unitButton: {
+      paddingHorizontal: 25,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: "#ccc",
+    },
+    unitButtonActive: {
+      backgroundColor: palette.primary,
+      borderColor: palette.primary,
+    },
+    unitButtonText: {
+      fontSize: 16,
+      color: palette.textMuted,
+    },
+    unitButtonTextActive: {
+      color: "white",
+      fontWeight: "bold",
+    },
+    startButton: {
+      backgroundColor: palette.primary,
+      paddingHorizontal: 40,
+      paddingVertical: 15,
+      borderRadius: 10,
+    },
+    startButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -58,65 +122,3 @@ export default function ConfigDistance() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 40,
-  },
-  inputContainer: {
-    width: "80%",
-    marginBottom: 30,
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 32,
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  unitContainer: {
-    flexDirection: "row",
-    gap: 15,
-    marginBottom: 40,
-  },
-  unitButton: {
-    paddingHorizontal: 25,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#ccc",
-  },
-  unitButtonActive: {
-    backgroundColor: "#2196F3",
-    borderColor: "#2196F3",
-  },
-  unitButtonText: {
-    fontSize: 16,
-    color: "#666",
-  },
-  unitButtonTextActive: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  startButton: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-  startButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-});

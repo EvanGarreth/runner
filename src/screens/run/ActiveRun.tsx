@@ -17,6 +17,7 @@ import {
 import { getGpsInterval, getWeatherTrackingEnabled, getUseMetricUnits } from "@/utils/settings";
 import { fetchAndSaveWeather } from "@/utils/weather";
 import { useSQLiteContext } from "expo-sqlite";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type RunType = "T" | "D" | "F";
 
@@ -24,6 +25,7 @@ export default function ActiveRun() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
+  const { palette } = useTheme();
 
   const runType = params.type as RunType;
   const targetSeconds = params.targetSeconds ? parseInt(params.targetSeconds as string) : null;
@@ -272,6 +274,110 @@ export default function ActiveRun() {
     return 0;
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      justifyContent: "center",
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: 40,
+    },
+    runTypeText: {
+      fontSize: 24,
+      fontWeight: "bold",
+    },
+    pausedText: {
+      fontSize: 18,
+      color: "#FF9800",
+      fontWeight: "bold",
+      marginTop: 10,
+    },
+    statsContainer: {
+      alignItems: "center",
+      marginBottom: 40,
+    },
+    mainStat: {
+      alignItems: "center",
+      marginBottom: 30,
+    },
+    mainStatValue: {
+      fontSize: 60,
+      fontWeight: "bold",
+      fontFamily: "monospace",
+    },
+    mainStatLabel: {
+      fontSize: 18,
+      color: palette.textMuted,
+      marginTop: 5,
+    },
+    secondaryStat: {
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    secondaryStatValue: {
+      fontSize: 32,
+      fontWeight: "600",
+    },
+    secondaryStatLabel: {
+      fontSize: 14,
+      color: palette.textMuted,
+      marginTop: 5,
+    },
+    progressBar: {
+      width: "100%",
+      height: 10,
+      backgroundColor: "#e0e0e0",
+      borderRadius: 5,
+      overflow: "hidden",
+      marginTop: 20,
+    },
+    progressFill: {
+      height: "100%",
+      backgroundColor: palette.primary,
+    },
+    controls: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 20,
+      marginBottom: 30,
+    },
+    pauseButton: {
+      backgroundColor: "#FF9800",
+      paddingHorizontal: 30,
+      paddingVertical: 15,
+      borderRadius: 10,
+    },
+    stopButton: {
+      backgroundColor: "#f44336",
+      paddingHorizontal: 30,
+      paddingVertical: 15,
+      borderRadius: 10,
+    },
+    buttonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+    infoContainer: {
+      alignItems: "center",
+    },
+    infoText: {
+      fontSize: 12,
+      color: palette.textMuted,
+      marginBottom: 5,
+    },
+    loadingText: {
+      marginTop: 20,
+      fontSize: 16,
+    },
+    errorText: {
+      fontSize: 18,
+      color: "#f44336",
+    },
+  });
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -341,107 +447,3 @@ export default function ActiveRun() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  runTypeText: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  pausedText: {
-    fontSize: 18,
-    color: "#FF9800",
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  statsContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  mainStat: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  mainStatValue: {
-    fontSize: 60,
-    fontWeight: "bold",
-    fontFamily: "monospace",
-  },
-  mainStatLabel: {
-    fontSize: 18,
-    color: "#666",
-    marginTop: 5,
-  },
-  secondaryStat: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  secondaryStatValue: {
-    fontSize: 32,
-    fontWeight: "600",
-  },
-  secondaryStatLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 5,
-  },
-  progressBar: {
-    width: "100%",
-    height: 10,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 5,
-    overflow: "hidden",
-    marginTop: 20,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#4CAF50",
-  },
-  controls: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
-    marginBottom: 30,
-  },
-  pauseButton: {
-    backgroundColor: "#FF9800",
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-  stopButton: {
-    backgroundColor: "#f44336",
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  infoContainer: {
-    alignItems: "center",
-  },
-  infoText: {
-    fontSize: 12,
-    color: "#999",
-    marginBottom: 5,
-  },
-  loadingText: {
-    marginTop: 20,
-    fontSize: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    color: "#f44336",
-  },
-});
