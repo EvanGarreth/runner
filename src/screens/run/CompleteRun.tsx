@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { formatDistance, formatTime } from "@/utils/location";
@@ -22,6 +22,7 @@ export default function CompleteRun() {
   const [note, setNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const notesInputRef = useRef<RNView>(null);
 
   const getRunTypeName = () => {
     switch (runType) {
@@ -85,7 +86,7 @@ export default function CompleteRun() {
             </View>
           </View>
 
-          <View style={styles.notesContainer}>
+          <View style={styles.notesContainer} ref={notesInputRef}>
             <Text style={styles.notesLabel}>Notes (optional)</Text>
             <TextInput
               style={styles.notesInput}
@@ -98,8 +99,20 @@ export default function CompleteRun() {
               onChangeText={setNote}
               onFocus={() => {
                 setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
+                  notesInputRef.current?.measureLayout(
+                    scrollViewRef.current as any,
+                    (x, y) => {
+                      scrollViewRef.current?.scrollTo({
+                        y: y - 20,
+                        animated: true,
+                      });
+                    },
+                    () => {
+                      // Fallback if measureLayout fails
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }
+                  );
+                }, 300);
               }}
               maxLength={500}
             />

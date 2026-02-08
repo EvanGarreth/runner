@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import { StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState, useCallback } from "react";
@@ -96,25 +96,25 @@ export default function Overview() {
         <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <RNView style={styles.statCard}>
             <Text style={styles.statValue}>{runs.length}</Text>
             <Text style={styles.statLabel}>Total Runs</Text>
-          </View>
+          </RNView>
 
-          <View style={styles.statCard}>
+          <RNView style={styles.statCard}>
             <Text style={styles.statValue}>{formatDistance(totalMiles)}</Text>
             <Text style={styles.statLabel}>Total Distance</Text>
-          </View>
+          </RNView>
 
-          <View style={styles.statCard}>
+          <RNView style={styles.statCard}>
             <Text style={styles.statValue}>{formatTime(totalSeconds)}</Text>
             <Text style={styles.statLabel}>Total Time</Text>
-          </View>
+          </RNView>
 
-          <View style={styles.statCard}>
+          <RNView style={styles.statCard}>
             <Text style={styles.statValue}>{averagePace}</Text>
             <Text style={styles.statLabel}>Avg Pace (min/mi)</Text>
-          </View>
+          </RNView>
         </View>
 
         <Text style={styles.sectionTitle}>Recent Runs</Text>
@@ -125,24 +125,24 @@ export default function Overview() {
 
           return (
             <TouchableOpacity key={run.id} style={styles.runCard} onPress={() => router.push(`/runs/${run.id}`)}>
-              <View style={styles.runCardHeader}>
+              <RNView style={styles.runCardHeader}>
                 <Text style={styles.runType}>{getRunTypeName(run.type)} Run</Text>
-                <View style={styles.ratingContainer}>
+                <RNView style={styles.ratingContainer}>
                   {[...Array(run.rating)].map((_, i) => (
                     <FontAwesome key={i} name="star" size={14} color="#FFD700" />
                   ))}
-                </View>
-              </View>
+                </RNView>
+              </RNView>
               <Text style={styles.runDate}>
                 {start.toLocaleDateString()} at {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </Text>
-              <View style={styles.runStats}>
+              <RNView style={styles.runStats}>
                 <Text style={styles.runStat}>{formatDistance(run.miles)}</Text>
                 <Text style={styles.runStatDivider}>•</Text>
                 <Text style={styles.runStat}>{formatTime(duration)}</Text>
                 <Text style={styles.runStatDivider}>•</Text>
                 <Text style={styles.runStat}>{calculatePace(run.miles, duration)} pace</Text>
-              </View>
+              </RNView>
             </TouchableOpacity>
           );
         })}

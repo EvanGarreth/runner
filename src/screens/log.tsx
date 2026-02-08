@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState, useCallback } from "react";
@@ -81,34 +81,34 @@ export default function Log() {
 
     return (
       <TouchableOpacity style={styles.runCard} onPress={() => router.push(`/runs/${run.id}`)}>
-        <View style={styles.runCardLeft}>
-          <View style={styles.iconContainer}>
+        <RNView style={styles.runCardLeft}>
+          <RNView style={styles.iconContainer}>
             <FontAwesome name={getRunTypeIcon(run.type)} size={24} color="#4CAF50" />
-          </View>
-          <View style={styles.runInfo}>
+          </RNView>
+          <RNView style={styles.runInfo}>
             <Text style={styles.runType}>{getRunTypeName(run.type)} Run</Text>
             <Text style={styles.runDate}>
               {start.toLocaleDateString()} at {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </Text>
-            <View style={styles.runStats}>
+            <RNView style={styles.runStats}>
               <Text style={styles.runStat}>{formatDistance(run.miles)}</Text>
               <Text style={styles.runStatDivider}>•</Text>
               <Text style={styles.runStat}>{formatTime(duration)}</Text>
               <Text style={styles.runStatDivider}>•</Text>
               <Text style={styles.runStat}>{calculatePace(run.miles, duration)}</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.runCardRight}>
-          <View style={styles.ratingContainer}>
+            </RNView>
+          </RNView>
+        </RNView>
+        <RNView style={styles.runCardRight}>
+          <RNView style={styles.ratingContainer}>
             {[...Array(run.rating)].map((_, i) => (
               <FontAwesome key={i} name="star" size={14} color="#FFD700" />
             ))}
-          </View>
+          </RNView>
           {run.note && run.note.length > 0 && (
             <FontAwesome name="file-text-o" size={16} color="#666" style={styles.noteIcon} />
           )}
-        </View>
+        </RNView>
       </TouchableOpacity>
     );
   };
