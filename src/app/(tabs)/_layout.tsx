@@ -28,7 +28,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="run"
         options={{
-          title: "Select New Run Type",
+          title: "Start New Run",
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />

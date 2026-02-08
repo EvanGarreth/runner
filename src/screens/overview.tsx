@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, ActivityIndicator, TouchableHighlight, View as RNView } from "react-native";
+import { StyleSheet, ScrollView, ActivityIndicator, TouchableHighlight, TouchableOpacity, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +6,7 @@ import { formatDistance, formatTime, calculatePace } from "@/utils/location";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface Run {
@@ -80,10 +81,12 @@ export default function Overview() {
       flex: 1,
       padding: 20,
     },
-    title: {
-      fontSize: 28,
-      fontWeight: "bold",
-      marginBottom: 10,
+    settingsButton: {
+      position: "absolute",
+      top: 20,
+      right: 20,
+      padding: 8,
+      zIndex: 10,
     },
     separator: {
       marginVertical: 20,
@@ -184,7 +187,9 @@ export default function Overview() {
   if (runs.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Overview</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => router.push("/runs/settings")}>
+          <FontAwesome5 name="cog" size={24} color={palette.textMuted} />
+        </TouchableOpacity>
         <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
         <Text style={styles.emptyText}>No completed runs yet.</Text>
         <Text style={styles.emptySubtext}>Start a run and complete it to see your stats here!</Text>
@@ -195,7 +200,9 @@ export default function Overview() {
   return (
     <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
-        <Text style={styles.title}>Overview</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => router.push("/runs/settings")}>
+          <FontAwesome5 name="cog" size={24} color={palette.textMuted} />
+        </TouchableOpacity>
         <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
         <View style={styles.statsGrid}>

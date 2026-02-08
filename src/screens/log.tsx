@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet, TouchableHighlight, ActivityIndicator, View as RNView } from "react-native";
+import { FlatList, StyleSheet, TouchableHighlight, TouchableOpacity, ActivityIndicator, View as RNView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState, useCallback } from "react";
@@ -6,6 +6,7 @@ import { formatDistance, formatTime, calculatePace } from "@/utils/location";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface Run {
@@ -87,10 +88,12 @@ export default function Log() {
       justifyContent: "center",
       alignItems: "center",
     },
-    title: {
-      fontSize: 28,
-      fontWeight: "bold",
-      marginBottom: 10,
+    settingsButton: {
+      position: "absolute",
+      top: 20,
+      right: 20,
+      padding: 8,
+      zIndex: 10,
     },
     separator: {
       marginVertical: 20,
@@ -235,7 +238,9 @@ export default function Log() {
   if (runs.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.title}>Log</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => router.push("/runs/settings")}>
+          <FontAwesome5 name="cog" size={24} color={palette.textMuted} />
+        </TouchableOpacity>
         <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
         <Text style={styles.emptyText}>No completed runs yet.</Text>
         <Text style={styles.emptySubtext}>Your run history will appear here!</Text>
@@ -245,7 +250,9 @@ export default function Log() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Log</Text>
+      <TouchableOpacity style={styles.settingsButton} onPress={() => router.push("/runs/settings")}>
+        <FontAwesome5 name="cog" size={24} color={palette.textMuted} />
+      </TouchableOpacity>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
       <FlatList
         data={runs}
