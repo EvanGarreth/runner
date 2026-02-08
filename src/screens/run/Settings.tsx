@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, TextInput, TouchableOpacity, Alert, Switch } from "react-native";
+import { StyleSheet, TextInput, TouchableOpacity, Alert, Switch, ActivityIndicator, ScrollView } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
+import { exportDatabaseFile, exportCSVFiles } from "@/utils/export";
 import {
   getGpsInterval,
   setGpsInterval,
@@ -23,11 +24,16 @@ export default function Settings() {
   const [useMetric, setUseMetric] = useState(false);
   const [selectedColor, setSelectedColor] = useState(baseColor);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState("");
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+    },
+    scrollContent: {
       padding: 20,
+      paddingBottom: 40,
     },
     title: {
       fontSize: 28,
@@ -80,6 +86,34 @@ export default function Settings() {
       fontSize: 18,
       fontWeight: "bold",
     },
+    exportButtonsContainer: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 10,
+    },
+    exportButton: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    exportButtonText: {
+      color: "white",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    loadingContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginTop: 15,
+    },
+    loadingText: {
+      fontSize: 14,
+      color: palette.textMuted,
+    },
   });
 
   // Load settings from database on mount
@@ -125,6 +159,38 @@ export default function Settings() {
     }
   };
 
+  const handleExportDatabase = async () => {
+    setIsExporting(true);
+    setExportStatus("Preparing database export...");
+
+    try {
+      await exportDatabaseFile();
+      Alert.alert("Export Complete", "Database exported successfully");
+    } catch (error) {
+      console.error("Database export error:", error);
+      Alert.alert("Export Failed", error instanceof Error ? error.message : "Failed to export database");
+    } finally {
+      setIsExporting(false);
+      setExportStatus("");
+    }
+  };
+
+  const handleExportCSVs = async () => {
+    setIsExporting(true);
+    setExportStatus("Generating CSV files...");
+
+    try {
+      await exportCSVFiles(db);
+      Alert.alert("Export Complete", "CSV files exported successfully");
+    } catch (error) {
+      console.error("CSV export error:", error);
+      Alert.alert("Export Failed", error instanceof Error ? error.message : "Failed to export CSV files");
+    } finally {
+      setIsExporting(false);
+      setExportStatus("");
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -136,62 +202,94 @@ export default function Settings() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Run Settings</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Run Settings</Text>
 
-      <View style={styles.settingContainer}>
-        <Text style={styles.label}>GPS Tracking Interval (seconds)</Text>
-        <Text style={styles.description}>How often to record your location during runs</Text>
+        <View style={styles.settingContainer}>
+          <Text style={styles.label}>GPS Tracking Interval (seconds)</Text>
+          <Text style={styles.description}>How often to record your location during runs</Text>
 
-        <TextInput
-          style={styles.input}
-          value={interval}
-          onChangeText={setInterval}
-          keyboardType="number-pad"
-          placeholder="5"
-        />
-
-        <Text style={styles.hint}>Lower values = more accurate route, higher battery usage</Text>
-      </View>
-
-      <View style={styles.settingContainer}>
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleLabel}>
-            <Text style={styles.label}>Weather Tracking</Text>
-            <Text style={styles.description}>Save weather conditions at the end of each run</Text>
-          </View>
-          <Switch
-            value={weatherTracking}
-            onValueChange={setWeatherTracking}
-            trackColor={{ false: "#ccc", true: palette.primary }}
-            thumbColor={weatherTracking ? "#fff" : "#f4f3f4"}
+          <TextInput
+            style={styles.input}
+            value={interval}
+            onChangeText={setInterval}
+            keyboardType="number-pad"
+            placeholder="5"
           />
-        </View>
-      </View>
 
-      <View style={styles.settingContainer}>
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleLabel}>
-            <Text style={styles.label}>Use Metric Units</Text>
-            <Text style={styles.description}>Display temperature in Celsius and wind speed in km/h</Text>
+          <Text style={styles.hint}>Lower values = more accurate route, higher battery usage</Text>
+        </View>
+
+        <View style={styles.settingContainer}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLabel}>
+              <Text style={styles.label}>Weather Tracking</Text>
+              <Text style={styles.description}>Save weather conditions at the end of each run</Text>
+            </View>
+            <Switch
+              value={weatherTracking}
+              onValueChange={setWeatherTracking}
+              trackColor={{ false: "#ccc", true: palette.primary }}
+              thumbColor={weatherTracking ? "#fff" : "#f4f3f4"}
+            />
           </View>
-          <Switch
-            value={useMetric}
-            onValueChange={setUseMetric}
-            trackColor={{ false: "#ccc", true: palette.primary }}
-            thumbColor={useMetric ? "#fff" : "#f4f3f4"}
-          />
         </View>
-      </View>
 
-      <View style={styles.settingContainer}>
-        <Text style={styles.label}>Theme Color</Text>
-        <Text style={styles.description}>Choose your preferred color scheme</Text>
-        <ColorPicker selectedColor={selectedColor} onSelectColor={setSelectedColor} />
-      </View>
+        <View style={styles.settingContainer}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLabel}>
+              <Text style={styles.label}>Use Metric Units</Text>
+              <Text style={styles.description}>Display temperature in Celsius and wind speed in km/h</Text>
+            </View>
+            <Switch
+              value={useMetric}
+              onValueChange={setUseMetric}
+              trackColor={{ false: "#ccc", true: palette.primary }}
+              thumbColor={useMetric ? "#fff" : "#f4f3f4"}
+            />
+          </View>
+        </View>
 
-      <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.primary }]} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Settings</Text>
-      </TouchableOpacity>
+        <View style={styles.settingContainer}>
+          <Text style={styles.label}>Theme Color</Text>
+          <Text style={styles.description}>Choose your preferred color scheme</Text>
+          <ColorPicker selectedColor={selectedColor} onSelectColor={setSelectedColor} />
+        </View>
+
+        <View style={styles.settingContainer}>
+          <Text style={styles.label}>Export Data</Text>
+          <Text style={styles.description}>Export your running data for backup or analysis</Text>
+
+          <View style={styles.exportButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.exportButton, { backgroundColor: palette.primary }]}
+              onPress={handleExportDatabase}
+              disabled={isExporting}
+            >
+              <Text style={styles.exportButtonText}>Export Database</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.exportButton, { backgroundColor: palette.primary }]}
+              onPress={handleExportCSVs}
+              disabled={isExporting}
+            >
+              <Text style={styles.exportButtonText}>Export CSVs</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isExporting && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={palette.primary} />
+              <Text style={styles.loadingText}>{exportStatus}</Text>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.primary }]} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save Settings</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
