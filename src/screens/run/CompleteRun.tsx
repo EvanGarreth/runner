@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   View as RNView,
+  BackHandler,
 } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -34,6 +35,37 @@ export default function CompleteRun() {
   const [isSaving, setIsSaving] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const notesInputRef = useRef<RNView>(null);
+
+  const hasUnsavedChanges = rating > 0 || note.trim().length > 0;
+
+  useEffect(() => {
+    const backAction = () => {
+      if (hasUnsavedChanges && !isSaving) {
+        Alert.alert(
+          "Unsaved Changes",
+          "You haven't saved your run rating and notes. Are you sure you want to leave?",
+          [
+            {
+              text: "Cancel",
+              onPress: () => null,
+              style: "cancel",
+            },
+            {
+              text: "Leave Without Saving",
+              onPress: () => router.back(),
+              style: "destructive",
+            },
+          ]
+        );
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+    return () => backHandler.remove();
+  }, [hasUnsavedChanges, isSaving, router]);
 
   const getRunTypeName = () => {
     switch (runType) {

@@ -243,8 +243,15 @@ export async function stopBackgroundLocationTracking(): Promise<void> {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
 
     if (isRegistered) {
-      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-      console.log('Background location tracking stopped');
+      try {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+        console.log('Background location tracking stopped');
+      } catch (stopError: any) {
+        // Ignore TaskNotFoundException - task is already stopped
+        if (!stopError.message?.includes('TaskNotFoundException')) {
+          throw stopError;
+        }
+      }
     }
 
     // Clear the callback

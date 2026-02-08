@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import {
   requestLocationPermissions,
   requestBackgroundPermissions,
@@ -23,6 +24,7 @@ type RunType = "T" | "D" | "F";
 
 export default function ActiveRun() {
   const router = useRouter();
+  const navigation = useNavigation();
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
   const { palette } = useTheme();
@@ -172,6 +174,38 @@ export default function ActiveRun() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Prevent accidental navigation away from active run
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      // Allow navigation if not running or if already paused and user is stopping
+      if (!isRunning) {
+        return;
+      }
+
+      // Prevent default navigation
+      e.preventDefault();
+
+      // Show confirmation alert
+      Alert.alert(
+        "Run in Progress",
+        "You have an active run. Are you sure you want to exit? Your run will not be saved.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Exit",
+            style: "destructive",
+            onPress: () => {
+              stopTracking();
+              navigation.dispatch(e.data.action);
+            },
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, isRunning, stopTracking]);
 
   // Update distance when location points change
   useEffect(() => {
