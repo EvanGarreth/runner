@@ -131,6 +131,9 @@ type LocationUpdateCallback = (locations: LocationPoint[]) => void;
 // Store the callback for location updates
 let locationUpdateCallback: LocationUpdateCallback | null = null;
 
+// Store the foreground location subscription
+let foregroundLocationSubscription: Location.LocationSubscription | null = null;
+
 /**
  * Define the background location task
  * This runs even when the app is backgrounded or screen is locked
@@ -189,7 +192,71 @@ export async function requestBackgroundPermissions(): Promise<boolean> {
 }
 
 /**
- * Start background location tracking
+ * Start foreground location tracking for active runs
+ * Uses watchPositionAsync for high-accuracy continuous tracking
+ * Works even when screen is locked (Android foreground service)
+ * @param callback - Function to call when location updates are received
+ */
+export async function startForegroundLocationTracking(callback: LocationUpdateCallback): Promise<boolean> {
+  try {
+    // Check if we have foreground permissions
+    const { status } = await Location.getForegroundPermissionsAsync();
+
+    if (status !== 'granted') {
+      console.error('Foreground location permission not granted');
+      return false;
+    }
+
+    // Stop any existing subscription first
+    if (foregroundLocationSubscription) {
+      foregroundLocationSubscription.remove();
+      foregroundLocationSubscription = null;
+    }
+
+    // Start watching position with high accuracy
+    foregroundLocationSubscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 1000, // Update every second
+        distanceInterval: 5, // Or every 5 meters
+        mayShowUserSettingsDialog: true,
+      },
+      (location) => {
+        const locationPoint: LocationPoint = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          timestamp: location.timestamp,
+          accuracy: location.coords.accuracy,
+        };
+        callback([locationPoint]);
+      }
+    );
+
+    console.log('Foreground location tracking started');
+    return true;
+  } catch (error) {
+    console.error('Error starting foreground location tracking:', error);
+    return false;
+  }
+}
+
+/**
+ * Stop foreground location tracking
+ */
+export async function stopForegroundLocationTracking(): Promise<void> {
+  try {
+    if (foregroundLocationSubscription) {
+      foregroundLocationSubscription.remove();
+      foregroundLocationSubscription = null;
+      console.log('Foreground location tracking stopped');
+    }
+  } catch (error) {
+    console.error('Error stopping foreground location tracking:', error);
+  }
+}
+
+/**
+ * Start background location tracking (for when app is backgrounded)
  * @param callback - Function to call when location updates are received
  */
 export async function startBackgroundLocationTracking(callback: LocationUpdateCallback): Promise<boolean> {
@@ -212,14 +279,14 @@ export async function startBackgroundLocationTracking(callback: LocationUpdateCa
       return true;
     }
 
-    // Start location updates
+    // Start location updates with foreground service for Android
     await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
       accuracy: Location.Accuracy.BestForNavigation,
       timeInterval: 1000, // Update every second
       distanceInterval: 5, // Or every 5 meters
       foregroundService: {
         notificationTitle: 'Runner Active',
-        notificationBody: 'Tracking your run',
+        notificationBody: 'Tracking your run in background',
         notificationColor: '#FF0000',
       },
       pausesUpdatesAutomatically: false,

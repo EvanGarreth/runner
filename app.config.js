@@ -32,7 +32,12 @@ module.exports = {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: "com.evanc.runner",
-      permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
+      permissions: [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "POST_NOTIFICATIONS",
+      ],
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,
@@ -57,6 +62,7 @@ module.exports = {
           googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
         },
       ],
+      "expo-notifications",
     ],
     experiments: {
       typedRoutes: true,

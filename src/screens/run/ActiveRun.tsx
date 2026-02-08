@@ -7,6 +7,8 @@ import {
   requestLocationPermissions,
   requestBackgroundPermissions,
   getCurrentLocation,
+  startForegroundLocationTracking,
+  stopForegroundLocationTracking,
   startBackgroundLocationTracking,
   stopBackgroundLocationTracking,
   calculateTotalDistance,
@@ -19,6 +21,17 @@ import { getGpsInterval, getWeatherTrackingEnabled, getUseMetricUnits } from "@/
 import { fetchAndSaveWeather } from "@/utils/weather";
 import { useSQLiteContext } from "expo-sqlite";
 import { useTheme } from "@/contexts/ThemeContext";
+import {
+  initializeRunNotifications,
+  showRunNotification,
+  updateRunNotification,
+  dismissRunNotification,
+  requestNotificationPermissions,
+  registerNotificationActionHandler,
+  NOTIFICATION_ACTION_PAUSE,
+  NOTIFICATION_ACTION_RESUME,
+  NOTIFICATION_ACTION_STOP,
+} from "@/utils/runNotification";
 
 type RunType = "T" | "D" | "F";
 
@@ -47,6 +60,8 @@ export default function ActiveRun() {
   const lastPauseStart = useRef<number | null>(null);
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
   const gpsInterval = useRef<NodeJS.Timeout | null>(null);
+  const notificationUpdateInterval = useRef<NodeJS.Timeout | null>(null);
+  const notificationSubscription = useRef<any>(null);
 
   const stopTracking = useCallback(async () => {
     if (timerInterval.current) {
@@ -57,9 +72,17 @@ export default function ActiveRun() {
       clearInterval(gpsInterval.current);
       gpsInterval.current = null;
     }
+    if (notificationUpdateInterval.current) {
+      clearInterval(notificationUpdateInterval.current);
+      notificationUpdateInterval.current = null;
+    }
 
-    // Stop background location tracking
+    // Stop both foreground and background location tracking
+    await stopForegroundLocationTracking();
     await stopBackgroundLocationTracking();
+
+    // Dismiss the notification
+    await dismissRunNotification();
 
     setIsRunning(false);
   }, []);
@@ -119,6 +142,15 @@ export default function ActiveRun() {
   // Request permissions and start run
   useEffect(() => {
     const initRun = async () => {
+      // Initialize notifications
+      notificationSubscription.current = await initializeRunNotifications();
+
+      // Request notification permissions
+      const notificationGranted = await requestNotificationPermissions();
+      if (!notificationGranted) {
+        console.log("notification permissions not granted");
+      }
+
       // Load GPS interval from settings
       const interval = await getGpsInterval(db);
       setGpsIntervalSeconds(interval);
@@ -136,7 +168,7 @@ export default function ActiveRun() {
       }
       console.log("foreground permissions granted");
 
-      // Request background permissions for continuous tracking
+      // Request background permissions (required on some Android versions for foreground service)
       console.log("requesting background permissions");
       const backgroundGranted = await requestBackgroundPermissions();
 
@@ -144,7 +176,7 @@ export default function ActiveRun() {
         console.log("background permissions not granted");
         Alert.alert(
           "Background Location Required",
-          "Please enable background location to continue tracking even when the screen is locked or the app is minimized.",
+          "Please enable background location to track your run even when the screen is locked.",
           [{ text: "OK", onPress: () => router.back() }]
         );
         setIsLoading(false);
@@ -171,6 +203,9 @@ export default function ActiveRun() {
 
     return () => {
       stopTracking();
+      if (notificationSubscription.current) {
+        notificationSubscription.current.remove();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -225,6 +260,54 @@ export default function ActiveRun() {
     }
   }, [elapsedSeconds, runType, targetSeconds, isRunning, handleStopRun]);
 
+  // Update notification periodically
+  useEffect(() => {
+    if (!isRunning) return;
+
+    // Register notification action handlers
+    registerNotificationActionHandler(NOTIFICATION_ACTION_PAUSE, handlePauseResume);
+    registerNotificationActionHandler(NOTIFICATION_ACTION_RESUME, handlePauseResume);
+    registerNotificationActionHandler(NOTIFICATION_ACTION_STOP, handleStopRun);
+
+    // Calculate progress for notification
+    const getNotificationProgress = () => {
+      if (runType === "T" && targetSeconds) {
+        // Timed run: progress in seconds
+        return { current: elapsedSeconds, max: targetSeconds, label: "Time Progress" };
+      }
+      if (runType === "D" && targetDistance) {
+        // Distance run: convert to meters for better granularity (1 mile = 1609.34 meters)
+        const currentMeters = Math.round(currentDistance * 1609.34);
+        const targetMeters = Math.round(targetDistance * 1609.34);
+        return { current: currentMeters, max: targetMeters, label: "Distance Progress" };
+      }
+      return undefined; // Free run - no progress bar
+    };
+
+    // Show initial notification
+    const distance = formatDistance(currentDistance);
+    const time = formatTime(elapsedSeconds);
+    const pace = calculatePace(currentDistance, elapsedSeconds);
+    const progress = getNotificationProgress();
+    showRunNotification(distance, time, pace, isPaused, progress);
+
+    // Update notification every 5 seconds (less frequent to avoid watch spam)
+    notificationUpdateInterval.current = setInterval(() => {
+      const distance = formatDistance(currentDistance);
+      const time = formatTime(elapsedSeconds);
+      const pace = calculatePace(currentDistance, elapsedSeconds);
+      const progress = getNotificationProgress();
+      updateRunNotification(distance, time, pace, isPaused, progress);
+    }, 5000);
+
+    return () => {
+      if (notificationUpdateInterval.current) {
+        clearInterval(notificationUpdateInterval.current);
+        notificationUpdateInterval.current = null;
+      }
+    };
+  }, [isRunning, isPaused, currentDistance, elapsedSeconds, handlePauseResume, handleStopRun, runType, targetSeconds, targetDistance]);
+
   const startRun = async () => {
     startTime.current = Date.now();
     setIsRunning(true);
@@ -238,13 +321,13 @@ export default function ActiveRun() {
       }
     }, 100);
 
-    // Start background GPS tracking
-    const trackingStarted = await startBackgroundLocationTracking((locations) => {
+    // Start foreground GPS tracking (works even when screen is locked)
+    const trackingStarted = await startForegroundLocationTracking((locations) => {
       setLocationPoints((prev) => [...prev, ...locations]);
     });
 
     if (!trackingStarted) {
-      console.error("Failed to start background location tracking");
+      console.error("Failed to start foreground location tracking");
       Alert.alert("GPS Error", "Failed to start location tracking. Please try again.");
       stopTracking();
     }
@@ -259,13 +342,13 @@ export default function ActiveRun() {
       }
       setIsPaused(false);
 
-      // Resume background GPS tracking
-      const trackingStarted = await startBackgroundLocationTracking((locations) => {
+      // Resume foreground GPS tracking
+      const trackingStarted = await startForegroundLocationTracking((locations) => {
         setLocationPoints((prev) => [...prev, ...locations]);
       });
 
       if (!trackingStarted) {
-        console.error("Failed to resume background location tracking");
+        console.error("Failed to resume foreground location tracking");
         Alert.alert("GPS Error", "Failed to resume location tracking.");
       }
     } else {
@@ -273,8 +356,8 @@ export default function ActiveRun() {
       lastPauseStart.current = Date.now();
       setIsPaused(true);
 
-      // Stop background GPS tracking
-      await stopBackgroundLocationTracking();
+      // Stop foreground GPS tracking
+      await stopForegroundLocationTracking();
 
       // Clear interval refs if any
       if (gpsInterval.current) {
