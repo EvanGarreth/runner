@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Text, View } from "@/components/Themed";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,6 +21,7 @@ export default function CompleteRun() {
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const getRunTypeName = () => {
     switch (runType) {
@@ -58,7 +59,7 @@ export default function CompleteRun() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <Text style={styles.title}>Run Complete!</Text>
 
@@ -95,6 +96,11 @@ export default function CompleteRun() {
               textAlignVertical="top"
               value={note}
               onChangeText={setNote}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
               maxLength={500}
             />
           </View>
