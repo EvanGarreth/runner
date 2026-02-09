@@ -21,6 +21,7 @@ import { getGpsInterval, getWeatherTrackingEnabled, getUseMetricUnits } from "@/
 import { fetchAndSaveWeather } from "@/utils/weather";
 import { useSQLiteContext } from "expo-sqlite";
 import { useTheme } from "@/contexts/ThemeContext";
+import { logger } from "@/utils/logger";
 import {
   initializeRunNotifications,
   showRunNotification,
@@ -28,6 +29,7 @@ import {
   dismissRunNotification,
   requestNotificationPermissions,
   registerNotificationActionHandler,
+  clearAllNotificationActionHandlers,
   NOTIFICATION_ACTION_PAUSE,
   NOTIFICATION_ACTION_RESUME,
   NOTIFICATION_ACTION_STOP,
@@ -64,27 +66,33 @@ export default function ActiveRun() {
   const notificationSubscription = useRef<any>(null);
 
   const stopTracking = useCallback(async () => {
-    if (timerInterval.current) {
-      clearInterval(timerInterval.current);
-      timerInterval.current = null;
-    }
-    if (gpsInterval.current) {
-      clearInterval(gpsInterval.current);
-      gpsInterval.current = null;
-    }
-    if (notificationUpdateInterval.current) {
-      clearInterval(notificationUpdateInterval.current);
-      notificationUpdateInterval.current = null;
-    }
+    try {
+      if (timerInterval.current) {
+        clearInterval(timerInterval.current);
+        timerInterval.current = null;
+      }
+      if (gpsInterval.current) {
+        clearInterval(gpsInterval.current);
+        gpsInterval.current = null;
+      }
+      if (notificationUpdateInterval.current) {
+        clearInterval(notificationUpdateInterval.current);
+        notificationUpdateInterval.current = null;
+      }
 
-    // Stop both foreground and background location tracking
-    await stopForegroundLocationTracking();
-    await stopBackgroundLocationTracking();
+      // Stop both foreground and background location tracking
+      await stopForegroundLocationTracking();
+      await stopBackgroundLocationTracking();
 
-    // Dismiss the notification
-    await dismissRunNotification();
+      // Dismiss the notification
+      await dismissRunNotification();
 
-    setIsRunning(false);
+      setIsRunning(false);
+    } catch (error) {
+      logger.error("Error stopping tracking:", error);
+      // Still set isRunning to false even if cleanup fails
+      setIsRunning(false);
+    }
   }, []);
 
   const saveRun = useCallback(async () => {
@@ -111,7 +119,7 @@ export default function ActiveRun() {
       if (weatherEnabled && locationPoints.length > 0) {
         const lastPoint = locationPoints[locationPoints.length - 1];
         fetchAndSaveWeather(db, runId, lastPoint.latitude, lastPoint.longitude, new Date(endDate), useMetric).catch(
-          console.error
+          logger.error
         );
       }
 
@@ -120,7 +128,7 @@ export default function ActiveRun() {
         `/runs/complete?runId=${runId}&distance=${currentDistance}&time=${elapsedSeconds}&type=${runType}`
       );
     } catch (error) {
-      console.error("Error saving run:", error);
+      logger.error("Error saving run:", error);
       Alert.alert("Error", "Failed to save run. Please try again.");
     }
   }, [locationPoints, db, runType, currentDistance, elapsedSeconds, router]);
@@ -142,70 +150,84 @@ export default function ActiveRun() {
   // Request permissions and start run
   useEffect(() => {
     const initRun = async () => {
-      // Initialize notifications
-      notificationSubscription.current = await initializeRunNotifications();
+      try {
+        // Initialize notifications
+        notificationSubscription.current = await initializeRunNotifications();
 
-      // Request notification permissions
-      const notificationGranted = await requestNotificationPermissions();
-      if (!notificationGranted) {
-        console.log("notification permissions not granted");
-      }
+        // Request notification permissions
+        const notificationGranted = await requestNotificationPermissions();
+        if (!notificationGranted) {
+          logger.log("notification permissions not granted");
+        }
 
-      // Load GPS interval from settings
-      const interval = await getGpsInterval(db);
-      setGpsIntervalSeconds(interval);
+        // Load GPS interval from settings
+        const interval = await getGpsInterval(db);
+        setGpsIntervalSeconds(interval);
 
-      console.log("requesting foreground permissions");
-      const granted = await requestLocationPermissions();
+        logger.log("requesting foreground permissions");
+        const granted = await requestLocationPermissions();
 
-      if (!granted) {
-        console.log("foreground permissions not granted");
-        Alert.alert("Location Permission Required", "Please enable location permissions to track your run.", [
+        if (!granted) {
+          logger.log("foreground permissions not granted");
+          Alert.alert("Location Permission Required", "Please enable location permissions to track your run.", [
+            { text: "OK", onPress: () => router.back() },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+        logger.log("foreground permissions granted");
+
+        // Request background permissions (required on some Android versions for foreground service)
+        logger.log("requesting background permissions");
+        const backgroundGranted = await requestBackgroundPermissions();
+
+        if (!backgroundGranted) {
+          logger.log("background permissions not granted");
+          Alert.alert(
+            "Background Location Required",
+            "Please enable background location to track your run even when the screen is locked.",
+            [{ text: "OK", onPress: () => router.back() }]
+          );
+          setIsLoading(false);
+          return;
+        }
+        logger.log("background permissions granted");
+
+        setPermissionGranted(true);
+
+        // Get initial location
+        logger.log("get current");
+        const initialLocation = await getCurrentLocation();
+        logger.log("got current");
+        if (initialLocation) {
+          logger.log("inital!");
+          setLocationPoints([initialLocation]);
+        }
+
+        setIsLoading(false);
+        await startRun();
+      } catch (error) {
+        logger.error("Error initializing run:", error);
+        Alert.alert("Error", "Failed to initialize run. Please try again.", [
           { text: "OK", onPress: () => router.back() },
         ]);
         setIsLoading(false);
-        return;
+        await stopTracking();
       }
-      console.log("foreground permissions granted");
-
-      // Request background permissions (required on some Android versions for foreground service)
-      console.log("requesting background permissions");
-      const backgroundGranted = await requestBackgroundPermissions();
-
-      if (!backgroundGranted) {
-        console.log("background permissions not granted");
-        Alert.alert(
-          "Background Location Required",
-          "Please enable background location to track your run even when the screen is locked.",
-          [{ text: "OK", onPress: () => router.back() }]
-        );
-        setIsLoading(false);
-        return;
-      }
-      console.log("background permissions granted");
-
-      setPermissionGranted(true);
-
-      // Get initial location
-      console.log("get current");
-      const initialLocation = await getCurrentLocation();
-      console.log("got current");
-      if (initialLocation) {
-        console.log("inital!");
-        setLocationPoints([initialLocation]);
-      }
-
-      setIsLoading(false);
-      await startRun();
     };
 
     initRun();
 
     return () => {
-      stopTracking();
+      // Call stopTracking without await but catch any errors
+      stopTracking().catch((error) => {
+        logger.error("Error during cleanup:", error);
+      });
       if (notificationSubscription.current) {
         notificationSubscription.current.remove();
       }
+      // Clear all notification action handlers to prevent stale references
+      clearAllNotificationActionHandlers();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -327,7 +349,7 @@ export default function ActiveRun() {
     });
 
     if (!trackingStarted) {
-      console.error("Failed to start foreground location tracking");
+      logger.error("Failed to start foreground location tracking");
       Alert.alert("GPS Error", "Failed to start location tracking. Please try again.");
       stopTracking();
     }
@@ -348,7 +370,7 @@ export default function ActiveRun() {
       });
 
       if (!trackingStarted) {
-        console.error("Failed to resume foreground location tracking");
+        logger.error("Failed to resume foreground location tracking");
         Alert.alert("GPS Error", "Failed to resume location tracking.");
       }
     } else {

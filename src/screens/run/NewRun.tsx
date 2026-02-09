@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { requestLocationPermissions, requestBackgroundPermissions, getCurrentLocation } from "@/utils/location";
 import { useTheme } from "@/contexts/ThemeContext";
+import { logger } from "@/utils/logger";
 
 export default function NewRun() {
   const router = useRouter();
@@ -13,27 +14,27 @@ export default function NewRun() {
   // Warm up GPS on mount
   useEffect(() => {
     const warmUpGPS = async () => {
-      console.log("Warming up GPS...");
+      logger.log("Warming up GPS...");
 
       // Request permissions first
       const foregroundGranted = await requestLocationPermissions();
       if (!foregroundGranted) {
-        console.log("Foreground permissions not granted, skipping GPS warmup");
+        logger.log("Foreground permissions not granted, skipping GPS warmup");
         return;
       }
 
       const backgroundGranted = await requestBackgroundPermissions();
       if (!backgroundGranted) {
-        console.log("Background permissions not granted, skipping GPS warmup");
+        logger.log("Background permissions not granted, skipping GPS warmup");
         return;
       }
 
       // Get initial location to warm up GPS
       const location = await getCurrentLocation();
       if (location) {
-        console.log("GPS warmed up successfully:", location);
+        logger.log("GPS warmed up successfully:", location);
       } else {
-        console.log("Failed to get initial GPS location");
+        logger.log("Failed to get initial GPS location");
       }
     };
 

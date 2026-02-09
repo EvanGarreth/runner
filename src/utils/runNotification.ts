@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import * as RunNotification from '../../modules/expo-run-notification';
+import { logger } from './logger';
 
 const RUN_NOTIFICATION_ID = 'active-run-notification';
 const NOTIFICATION_CHANNEL_ID = 'active-run-channel';
@@ -23,6 +24,23 @@ export function registerNotificationActionHandler(action: string, handler: Notif
 }
 
 /**
+ * Unregister a handler for notification actions
+ */
+export function unregisterNotificationActionHandler(action: string) {
+  delete actionHandlers[action];
+}
+
+/**
+ * Clear all notification action handlers
+ * Call this when cleaning up to prevent stale references
+ */
+export function clearAllNotificationActionHandlers() {
+  Object.keys(actionHandlers).forEach((key) => {
+    delete actionHandlers[key];
+  });
+}
+
+/**
  * Initialize notification handling
  * Call this once when the app starts
  */
@@ -38,24 +56,35 @@ export async function initializeRunNotifications() {
 
   // Set up notification categories with actions
   if (Platform.OS === 'android') {
-    // For Android, listen to notification action events from custom module
-    const subscription = RunNotification.addNotificationActionListener((event) => {
-      const handlerMap: Record<string, string> = {
-        pause: NOTIFICATION_ACTION_PAUSE,
-        resume: NOTIFICATION_ACTION_RESUME,
-        stop: NOTIFICATION_ACTION_STOP,
-      };
+    try {
+      // For Android, listen to notification action events from custom module
+      const subscription = RunNotification.addNotificationActionListener((event) => {
+        try {
+          const handlerMap: Record<string, string> = {
+            pause: NOTIFICATION_ACTION_PAUSE,
+            resume: NOTIFICATION_ACTION_RESUME,
+            stop: NOTIFICATION_ACTION_STOP,
+          };
 
-      const actionId = handlerMap[event.action];
-      if (actionId) {
-        const handler = actionHandlers[actionId];
-        if (handler) {
-          handler();
+          const actionId = handlerMap[event?.action];
+          if (actionId) {
+            const handler = actionHandlers[actionId];
+            if (handler && typeof handler === 'function') {
+              handler();
+            } else {
+              logger.warn(`No handler registered for action: ${actionId}`);
+            }
+          }
+        } catch (error) {
+          logger.error('Error handling notification action:', error);
         }
-      }
-    });
+      });
 
-    return subscription;
+      return subscription;
+    } catch (error) {
+      logger.error('Error initializing Android notification listener:', error);
+      return null;
+    }
   } else {
     // iOS setup
     await Notifications.setNotificationCategoryAsync('run-active', [
@@ -96,17 +125,23 @@ export async function initializeRunNotifications() {
 
     // Listen for notification responses (when user taps an action button)
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const actionId = response.actionIdentifier;
+      try {
+        const actionId = response?.actionIdentifier;
 
-      // Handle default action (tapping the notification itself)
-      if (actionId === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-        return;
-      }
+        // Handle default action (tapping the notification itself)
+        if (actionId === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+          return;
+        }
 
-      // Handle custom actions
-      const handler = actionHandlers[actionId];
-      if (handler) {
-        handler();
+        // Handle custom actions
+        const handler = actionHandlers[actionId];
+        if (handler && typeof handler === 'function') {
+          handler();
+        } else if (actionId) {
+          logger.warn(`No handler registered for action: ${actionId}`);
+        }
+      } catch (error) {
+        logger.error('Error handling notification response:', error);
       }
     });
 
@@ -131,7 +166,7 @@ export async function showRunNotification(
     const { status } = await Notifications.getPermissionsAsync();
 
     if (status !== 'granted') {
-      console.warn('Notification permission not granted, cannot show notification');
+      logger.warn('Notification permission not granted, cannot show notification');
       return;
     }
 
@@ -139,18 +174,23 @@ export async function showRunNotification(
 
     // Use custom native module for Android to get native progress bar support
     if (Platform.OS === 'android') {
-      RunNotification.showRunNotification({
-        title: isPaused ? 'Run Paused' : 'Run Active',
-        body,
-        isPaused,
-        progress: progress
-          ? {
-              current: progress.current,
-              max: progress.max,
-            }
-          : undefined,
-      });
-      return;
+      try {
+        RunNotification.showRunNotification({
+          title: isPaused ? 'Run Paused' : 'Run Active',
+          body,
+          isPaused,
+          progress: progress
+            ? {
+                current: progress.current,
+                max: progress.max,
+              }
+            : undefined,
+        });
+        return;
+      } catch (error) {
+        logger.error('Error calling native showRunNotification:', error);
+        // Fall through to expo-notifications fallback
+      }
     }
 
     // Fallback to expo-notifications for iOS
@@ -173,7 +213,7 @@ export async function showRunNotification(
       trigger: null, // Show immediately
     });
   } catch (error) {
-    console.error('Error showing run notification:', error);
+    logger.error('Error showing run notification:', error);
   }
 }
 
@@ -196,12 +236,18 @@ export async function updateRunNotification(
 export async function dismissRunNotification(): Promise<void> {
   try {
     if (Platform.OS === 'android') {
-      RunNotification.dismissRunNotification();
+      try {
+        RunNotification.dismissRunNotification();
+      } catch (error) {
+        logger.error('Error calling native dismissRunNotification:', error);
+        // Try expo-notifications as fallback
+        await Notifications.dismissNotificationAsync(RUN_NOTIFICATION_ID);
+      }
     } else {
       await Notifications.dismissNotificationAsync(RUN_NOTIFICATION_ID);
     }
   } catch (error) {
-    console.error('Error dismissing run notification:', error);
+    logger.error('Error dismissing run notification:', error);
   }
 }
 
@@ -221,7 +267,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 
     return finalStatus === 'granted';
   } catch (error) {
-    console.error('Error requesting notification permissions:', error);
+    logger.error('Error requesting notification permissions:', error);
     return false;
   }
 }
