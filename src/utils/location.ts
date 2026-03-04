@@ -138,29 +138,32 @@ let foregroundLocationSubscription: Location.LocationSubscription | null = null;
  * Define the background location task
  * This runs even when the app is backgrounded or screen is locked
  */
-TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
-  if (error) {
-    console.error('Background location task error:', error);
-    return;
-  }
-
-  if (data) {
-    const { locations } = data;
-
-    // Convert to our LocationPoint format
-    const locationPoints: LocationPoint[] = locations.map((loc: any) => ({
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      timestamp: loc.timestamp,
-      accuracy: loc.coords.accuracy,
-    }));
-
-    // Call the callback if set
-    if (locationUpdateCallback) {
-      locationUpdateCallback(locationPoints);
+// Check if task is already defined to prevent crashes on hot reload
+if (!TaskManager.isTaskDefined(BACKGROUND_LOCATION_TASK)) {
+  TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
+    if (error) {
+      console.error('Background location task error:', error);
+      return;
     }
-  }
-});
+
+    if (data) {
+      const { locations } = data;
+
+      // Convert to our LocationPoint format
+      const locationPoints: LocationPoint[] = locations.map((loc: any) => ({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        timestamp: loc.timestamp,
+        accuracy: loc.coords.accuracy,
+      }));
+
+      // Call the callback if set
+      if (locationUpdateCallback) {
+        locationUpdateCallback(locationPoints);
+      }
+    }
+  });
+}
 
 /**
  * Request background location permissions
@@ -272,11 +275,16 @@ export async function startBackgroundLocationTracking(callback: LocationUpdateCa
     // Store the callback
     locationUpdateCallback = callback;
 
-    // Check if task is already running
+    // Check if task is already running and stop it first to ensure clean state
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
     if (isRegistered) {
-      console.log('Background location task already running');
-      return true;
+      console.log('Background location task already running, restarting...');
+      try {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      } catch (stopError: any) {
+        // Ignore errors when stopping - task may not actually be running
+        console.log('Error stopping previous task (ignoring):', stopError.message);
+      }
     }
 
     // Start location updates with foreground service for Android

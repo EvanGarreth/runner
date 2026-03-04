@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import * as RunNotification from '../../modules/expo-run-notification';
+import * as RunNotification from 'expo-run-notification';
 import { logger } from './logger';
 
 const RUN_NOTIFICATION_ID = 'active-run-notification';
