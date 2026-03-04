@@ -64,6 +64,7 @@ export default function ActiveRun() {
   const gpsInterval = useRef<NodeJS.Timeout | null>(null);
   const notificationUpdateInterval = useRef<NodeJS.Timeout | null>(null);
   const notificationSubscription = useRef<any>(null);
+  const isStopping = useRef<boolean>(false);
 
   const stopTracking = useCallback(async () => {
     try {
@@ -88,10 +89,12 @@ export default function ActiveRun() {
       await dismissRunNotification();
 
       setIsRunning(false);
+      isStopping.current = false;
     } catch (error) {
       logger.error("Error stopping tracking:", error);
       // Still set isRunning to false even if cleanup fails
       setIsRunning(false);
+      isStopping.current = false;
     }
   }, []);
 
@@ -134,8 +137,21 @@ export default function ActiveRun() {
   }, [locationPoints, db, runType, currentDistance, elapsedSeconds, router]);
 
   const handleStopRun = useCallback(() => {
+    // Prevent multiple stop alerts
+    if (isStopping.current) {
+      return;
+    }
+    isStopping.current = true;
+
     Alert.alert("End Run", "Are you sure you want to end this run?", [
-      { text: "Cancel", style: "cancel" },
+      {
+        text: "Cancel",
+        style: "cancel",
+        onPress: () => {
+          // Reset flag if user cancels
+          isStopping.current = false;
+        },
+      },
       {
         text: "End Run",
         style: "destructive",
