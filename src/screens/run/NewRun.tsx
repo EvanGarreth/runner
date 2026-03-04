@@ -3,7 +3,7 @@ import { Text, View } from "@/components/Themed";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { requestLocationPermissions, requestBackgroundPermissions, getCurrentLocation } from "@/utils/location";
+import { requestLocationPermissions, getCurrentLocation } from "@/utils/location";
 import { useTheme } from "@/contexts/ThemeContext";
 import { logger } from "@/utils/logger";
 
@@ -16,16 +16,10 @@ export default function NewRun() {
     const warmUpGPS = async () => {
       logger.log("Warming up GPS...");
 
-      // Request permissions first
+      // Request only foreground permissions for warmup
       const foregroundGranted = await requestLocationPermissions();
       if (!foregroundGranted) {
         logger.log("Foreground permissions not granted, skipping GPS warmup");
-        return;
-      }
-
-      const backgroundGranted = await requestBackgroundPermissions();
-      if (!backgroundGranted) {
-        logger.log("Background permissions not granted, skipping GPS warmup");
         return;
       }
 

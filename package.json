@@ -13,6 +13,7 @@
     "baseline-browser-mapping": "^2.9.19",
     "expo": "~54.0.13",
     "expo-constants": "~18.0.9",
+    "expo-document-picker": "^55.0.8",
     "expo-file-system": "^19.0.21",
     "expo-linking": "~8.0.8",
     "expo-location": "~19.0.7",

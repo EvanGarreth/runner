@@ -7,8 +7,6 @@ import {
   requestLocationPermissions,
   requestBackgroundPermissions,
   getCurrentLocation,
-  startForegroundLocationTracking,
-  stopForegroundLocationTracking,
   startBackgroundLocationTracking,
   stopBackgroundLocationTracking,
   calculateTotalDistance,
@@ -81,8 +79,7 @@ export default function ActiveRun() {
         notificationUpdateInterval.current = null;
       }
 
-      // Stop both foreground and background location tracking
-      await stopForegroundLocationTracking();
+      // Stop location tracking
       await stopBackgroundLocationTracking();
 
       // Dismiss the notification
@@ -359,41 +356,20 @@ export default function ActiveRun() {
       }
     }, 100);
 
-    // Shared callback for both foreground and background tracking
+    // Callback for location tracking
     const locationCallback = (locations: LocationPoint[]) => {
       setLocationPoints((prev) => [...prev, ...locations]);
     };
 
-    // Start foreground GPS tracking (for when app is in foreground)
-    const foregroundStarted = await startForegroundLocationTracking(locationCallback);
+    // Use background location tracking with foreground service
+    // This handles both foreground and background cases, preventing conflicts
+    const trackingStarted = await startBackgroundLocationTracking(locationCallback);
 
-    if (!foregroundStarted) {
-      logger.error("Failed to start foreground location tracking");
+    if (!trackingStarted) {
+      logger.error("Failed to start location tracking");
       Alert.alert("GPS Error", "Failed to start location tracking. Please try again.");
       stopTracking();
       return;
-    }
-
-    // Start background GPS tracking (keeps running when screen is locked or app backgrounded)
-    const backgroundStarted = await startBackgroundLocationTracking(locationCallback);
-
-    if (!backgroundStarted) {
-      logger.error("Failed to start background location tracking");
-      Alert.alert(
-        "GPS Warning",
-        "Background location tracking failed to start. GPS may not work reliably when the screen is locked. Continue anyway?",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => stopTracking(),
-          },
-          {
-            text: "Continue",
-            style: "default",
-          },
-        ]
-      );
     }
   };
 
@@ -406,38 +382,25 @@ export default function ActiveRun() {
       }
       setIsPaused(false);
 
-      // Shared callback for both foreground and background tracking
+      // Callback for location tracking
       const locationCallback = (locations: LocationPoint[]) => {
         setLocationPoints((prev) => [...prev, ...locations]);
       };
 
-      // Resume foreground GPS tracking
-      const foregroundStarted = await startForegroundLocationTracking(locationCallback);
+      // Resume location tracking
+      const trackingStarted = await startBackgroundLocationTracking(locationCallback);
 
-      if (!foregroundStarted) {
-        logger.error("Failed to resume foreground location tracking");
+      if (!trackingStarted) {
+        logger.error("Failed to resume location tracking");
         Alert.alert("GPS Error", "Failed to resume location tracking.");
         return;
-      }
-
-      // Resume background GPS tracking
-      const backgroundStarted = await startBackgroundLocationTracking(locationCallback);
-
-      if (!backgroundStarted) {
-        logger.error("Failed to resume background location tracking");
-        Alert.alert(
-          "GPS Warning",
-          "Background location tracking failed to resume. GPS may not work reliably when the screen is locked.",
-          [{ text: "OK" }]
-        );
       }
     } else {
       // Pause
       lastPauseStart.current = Date.now();
       setIsPaused(true);
 
-      // Stop both foreground and background GPS tracking
-      await stopForegroundLocationTracking();
+      // Stop GPS tracking
       await stopBackgroundLocationTracking();
 
       // Clear interval refs if any

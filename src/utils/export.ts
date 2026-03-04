@@ -1,6 +1,7 @@
 import * as Sharing from 'expo-sharing';
 import { SQLiteDatabase } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as DocumentPicker from 'expo-document-picker';
 
 /**
  * Escapes a value for use in a CSV field
@@ -195,5 +196,58 @@ export async function exportDatabaseFile(): Promise<void> {
   await Sharing.shareAsync(exportPath, {
     mimeType: 'application/vnd.sqlite3',
     dialogTitle: 'Export Database',
+  });
+}
+
+/**
+ * Drops all tables from the database
+ * IMPORTANT: This is destructive and will delete all data
+ */
+async function dropAllTables(db: SQLiteDatabase): Promise<void> {
+  // Get list of all tables (excluding sqlite internal tables)
+  const tables = await db.getAllAsync<{ name: string }>(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+  );
+
+  // Drop each table
+  for (const table of tables) {
+    await db.execAsync(`DROP TABLE IF EXISTS ${table.name}`);
+  }
+
+  // Reset user_version to 0
+  await db.execAsync('PRAGMA user_version = 0');
+}
+
+/**
+ * Imports a SQLite database file
+ * Replaces the current database with the imported one
+ * IMPORTANT: This will drop all existing tables and data
+ */
+export async function importDatabaseFile(db: SQLiteDatabase): Promise<void> {
+  // Let user pick a .db file
+  const result = await DocumentPicker.getDocumentAsync({
+    type: 'application/vnd.sqlite3',
+    copyToCacheDirectory: true,
+  });
+
+  if (result.canceled) {
+    throw new Error('Import cancelled');
+  }
+
+  const selectedFile = result.assets[0];
+  if (!selectedFile) {
+    throw new Error('No file selected');
+  }
+
+  const dbPath = `${FileSystem.documentDirectory}SQLite/runner.db`;
+
+  // Drop all existing tables
+  await dropAllTables(db);
+
+  // Close the database connection is handled by the caller
+  // Copy the imported file to replace the current database
+  await FileSystem.copyAsync({
+    from: selectedFile.uri,
+    to: dbPath,
   });
 }

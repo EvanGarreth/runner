@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, TouchableOpacity, Alert, Switch, ActivityIndicat
 import { Text, View } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { exportDatabaseFile, exportCSVFiles } from "@/utils/export";
+import { exportDatabaseFile, exportCSVFiles, importDatabaseFile } from "@/utils/export";
 import {
   getGpsInterval,
   setGpsInterval,
@@ -191,6 +191,46 @@ export default function Settings() {
     }
   };
 
+  const handleImportDatabase = async () => {
+    Alert.alert(
+      "Import Database",
+      "This will replace ALL current data with the imported database. This action cannot be undone. Continue?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Import",
+          style: "destructive",
+          onPress: async () => {
+            setIsExporting(true);
+            setExportStatus("Importing database...");
+
+            try {
+              await importDatabaseFile(db);
+              Alert.alert(
+                "Import Complete",
+                "Database imported successfully. Please restart the app to see your imported data.",
+                [{ text: "OK" }]
+              );
+            } catch (error) {
+              console.error("Database import error:", error);
+              if (error instanceof Error && error.message === "Import cancelled") {
+                // User cancelled, don't show error
+              } else {
+                Alert.alert("Import Failed", error instanceof Error ? error.message : "Failed to import database");
+              }
+            } finally {
+              setIsExporting(false);
+              setExportStatus("");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -284,6 +324,19 @@ export default function Settings() {
               <Text style={styles.loadingText}>{exportStatus}</Text>
             </View>
           )}
+        </View>
+
+        <View style={styles.settingContainer}>
+          <Text style={styles.label}>Import Data</Text>
+          <Text style={styles.description}>Import a previously exported database file (replaces all current data)</Text>
+
+          <TouchableOpacity
+            style={[styles.exportButton, { backgroundColor: "#d32f2f" }]}
+            onPress={handleImportDatabase}
+            disabled={isExporting}
+          >
+            <Text style={styles.exportButtonText}>Import Database</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.primary }]} onPress={handleSave}>
